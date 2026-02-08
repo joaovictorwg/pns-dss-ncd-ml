@@ -1,0 +1,394 @@
+{
+    "col_positions": [
+        [
+            0,
+            2
+        ],
+        [
+            30,
+            31
+        ],
+        [
+            34,
+            35
+        ],
+        [
+            43,
+            44
+        ],
+        [
+            44,
+            45
+        ],
+        [
+            80,
+            81
+        ],
+        [
+            107,
+            108
+        ],
+        [
+            116,
+            119
+        ],
+        [
+            119,
+            120
+        ],
+        [
+            134,
+            135
+        ],
+        [
+            145,
+            147
+        ],
+        [
+            354,
+            355
+        ],
+        [
+            606,
+            611
+        ],
+        [
+            662,
+            663
+        ],
+        [
+            673,
+            674
+        ],
+        [
+            710,
+            711
+        ],
+        [
+            712,
+            713
+        ],
+        [
+            806,
+            807
+        ],
+        [
+            848,
+            849
+        ],
+        [
+            919,
+            920
+        ],
+        [
+            933,
+            934
+        ],
+        [
+            943,
+            944
+        ],
+        [
+            957,
+            958
+        ],
+        [
+            976,
+            977
+        ],
+        [
+            985,
+            986
+        ],
+        [
+            1020,
+            1021
+        ],
+        [
+            1021,
+            1022
+        ],
+        [
+            1049,
+            1050
+        ],
+        [
+            1346,
+            1351
+        ],
+        [
+            1361,
+            1366
+        ],
+        [
+            1518,
+            1526
+        ],
+        [
+            1526,
+            1534
+        ]
+    ],
+    "col_names": [
+        "V0001",
+        "V0026",
+        "A001",
+        "A005012",
+        "A00601",
+        "A01901",
+        "C006",
+        "C008",
+        "C009",
+        "D001",
+        "D00901",
+        "I00102",
+        "P00104",
+        "P02801",
+        "P035",
+        "P050",
+        "P052",
+        "Q00201",
+        "Q03001",
+        "Q06306",
+        "Q068",
+        "Q074",
+        "Q079",
+        "Q088",
+        "Q092",
+        "Q11605",
+        "Q11606",
+        "Q124",
+        "W00103",
+        "W00203",
+        "VDF002",
+        "VDF003"
+    ],
+    "rename_map": {
+        "V0001": "uf",
+        "V0026": "situacao_domicilio",
+        "A001": "tipo_domicilio",
+        "A005012": "rede_agua",
+        "A00601": "agua_canalizada",
+        "A01901": "acesso_internet",
+        "C006": "sexo",
+        "C008": "idade",
+        "C009": "raca",
+        "D001": "alfabetizado",
+        "D00901": "escolaridade",
+        "I00102": "plano_saude",
+        "VDF002": "renda_domiciliar",
+        "VDF003": "renda_per_capita",
+        "P00104": "peso",
+        "W00103": "peso_final",
+        "W00203": "altura",
+        "P050": "fumante_atual",
+        "P052": "fumou_passado",
+        "P02801": "alcool_semana",
+        "P035": "atividade_fisica",
+        "Q00201": "hipertensao",
+        "Q03001": "diabetes",
+        "Q06306": "doenca_coracao",
+        "Q068": "avc",
+        "Q074": "asma",
+        "Q079": "artrite",
+        "Q088": "dort",
+        "Q092": "depressao",
+        "Q11605": "enfisema",
+        "Q11606": "bronquite",
+        "Q124": "insuficiencia_renal"
+    },
+    "mapas_de_valores": {
+        "A001": {
+            "1": "Casa",
+            "2": "Apartamento",
+            "3": "Habitação em casa de cômodos, cortiço ou cabeça de porco",
+            "9 ": "Ignorado"
+        },
+        "A005012": {
+            "1": "Sim",
+            "2": "Não ",
+            "9 ": "Ignorado"
+        },
+        "A00601": {
+            "1": " Canalizada em pelo menos um cômodo ",
+            "2": " Canalizada no terreno ou propriedade ",
+            "3": "Não canalizada ",
+            "9 ": "Ignorado"
+        },
+        "A01901": {
+            "1": "Sim ",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "C006": {
+            "1": "Homem",
+            "2": "Mulher"
+        },
+        "C008": {
+            "000 a 130": "Idade (em anos)"
+        },
+        "C009": {
+            "1": "Branca",
+            "2": "Preta",
+            "3": "Amarela",
+            "4": "Parda ",
+            "5": "Indígena",
+            "9": "Ignorado"
+        },
+        "D001": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "D00901": {
+            "01": "Creche",
+            "02": "Pré-escola ",
+            "03": "Classe de alfabetização – CA ",
+            "04": "Alfabetização de jovens e adultos",
+            "05": "Antigo primário (elementar)",
+            "06": "Antigo ginasial (médio 1º ciclo)",
+            "07": "Regular do ensino fundamental ou do 1º grau ",
+            "08": "Educação de jovens e adultos (EJA) ou supletivo do ensino fundamental",
+            "09": "Antigo científico, clássico etc. (médio 2º ciclo)",
+            "10": "Regular do ensino médio ou do 2º grau",
+            "11": "Educação de jovens e adultos (EJA) ou supletivo do ensino médio",
+            "12": "Superior – graduação",
+            "13": "Especialização de nível superior (duração mínima de 360 horas)",
+            "14": "Mestrado",
+            "15": "Doutorado",
+            "99": "Ignorado"
+        },
+        "I00102": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "P00104": {
+            "1 a 599": "Quilogramas"
+        },
+        "P02801": {
+            "1 a 7": "Dias",
+            "0": "Nunca ou menos de uma vez por semana",
+            "9 ": "Ignorado"
+        },
+        "P035": {
+            "1 a 7": "Dias",
+            "0": "Nunca ou menos de uma vez por semana",
+            "9 ": "Ignorado"
+        },
+        "P050": {
+            "1": "Sim, diariamente",
+            "2": "Sim, menos que diariamente",
+            "3": "Não fumo atualmente",
+            "9 ": "Ignorado"
+        },
+        "P052": {
+            "1": "Sim, diariamente          ",
+            "2": "Sim, menos que diariamente           ",
+            "3": "Não, nunca fumei          ",
+            "9 ": "Ignorado"
+        },
+        "Q00201": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "Q03001": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "Q06306": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "Q068": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "Q074": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "Q079": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "Q088": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "Q092": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "Q11605": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "Q11606": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "Q124": {
+            "1": "Sim",
+            "2": "Não",
+            "9 ": "Ignorado"
+        },
+        "V0001": {
+            "11": "Rondônia",
+            "12": "Acre",
+            "13": "Amazonas",
+            "14": "Roraima",
+            "15": "Pará",
+            "16": "Amapá",
+            "17": "Tocantins",
+            "21": "Maranhão",
+            "22": "Piauí",
+            "23": "Ceará",
+            "24": "Rio Grande do Norte",
+            "25": "Paraíba",
+            "26": "Pernambuco",
+            "27": "Alagoas",
+            "28": "Sergipe",
+            "29": "Bahia",
+            "31": "Minas Gerais",
+            "32": "Espírito Santo",
+            "33": "Rio de Janeiro",
+            "35": "São Paulo",
+            "41": "Paraná",
+            "42": "Santa Catarina",
+            "43": "Rio Grande do Sul",
+            "50": "Mato Grosso do Sul",
+            "51": "Mato Grosso",
+            "52": "Goiás",
+            "53": "Distrito Federal"
+        },
+        "V0026": {
+            "1": "Urbano",
+            "2": "Rural"
+        },
+        "VDF002": {
+            "00000000 a 99999999": "Reais"
+        },
+        "VDF003": {
+            "00000000 a 99999999": "Reais"
+        },
+        "W00103": {
+            "20 a 200": "Quilogramas",
+            "999": "Erro"
+        },
+        "W00203": {
+            "110 a 210": "Centímetros",
+            "999": "Erro"
+        }
+    }
+}
