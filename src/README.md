@@ -256,25 +256,25 @@ df = run_preprocessing_pipeline(save_intermediate=False)
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│ 1️⃣  SELECTION: select_features()                        │
+│ 1.  SELECTION: select_features()                        │
 │    Mapeia códigos IBGE → nomes interpretáveis          │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│ 2️⃣  PREPROCESSING: clean_pns_data()                     │
+│ 2.  PREPROCESSING: clean_pns_data()                     │
 │    Limpeza, validação, filtros, recodificação          │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│ 3️⃣  FEATURE ENGINEERING: apply_feature_engineering()   │
+│ 3.  FEATURE ENGINEERING: apply_feature_engineering()   │
 │    One-hot, ordinais, combinações, IMC                 │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│ 4️⃣  TRANSFORMATION: apply_transformations()            │
+│ 4.  TRANSFORMATION: apply_transformations()            │
 │    Log, centralização, polinômios                      │
 └────────────────────┬────────────────────────────────────┘
                      │

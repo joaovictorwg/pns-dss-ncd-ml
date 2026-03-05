@@ -1,11 +1,11 @@
 """
-📚 ÍNDICE DE DOCUMENTAÇÃO E ARQUIVOS
+INDICE DE DOCUMENTACAO E ARQUIVOS
 
 Mapa completo para navegar a refatoração.
 """
 
 # =============================================================================
-# 🎯 COMEÇAR AQUI
+# COMECAR AQUI
 # =============================================================================
 
 """
@@ -49,7 +49,7 @@ Mapa completo para navegar a refatoração.
 """
 
 # =============================================================================
-# 📂 MAPA DE ARQUIVOS
+# MAPA DE ARQUIVOS
 # =============================================================================
 
 """
@@ -57,7 +57,7 @@ DOCUMENTAÇÃO TEXTUAL (ler primeiro):
 ───────────────────────────────────
 
 [1] REFATORACAO_RESUMO.txt
-    ├─ Status: ✅ LEIA PRIMEIRO
+   ├─ Status: LEIA PRIMEIRO
     ├─ Tempo: 5 minutos
     └─ O quê: Resumo executivo de toda refatoração
        - Números e estatísticas
@@ -66,7 +66,7 @@ DOCUMENTAÇÃO TEXTUAL (ler primeiro):
        - Como usar
 
 [2] src/README.md
-    ├─ Status: ✅ ESSENCIAL
+   ├─ Status: ESSENCIAL
     ├─ Tempo: 10 minutos
     └─ O quê: Documentação estruturada do projeto
        - Estrutura KDD explicada
@@ -79,7 +79,7 @@ CÓDIGO EXEMPLOS (execute depois):
 ──────────────────────────────────
 
 [3] src/QUICKSTART.py
-    ├─ Status: ✅ COMECE AQUI
+   ├─ Status: COMECE AQUI
     ├─ Tempo: 2 minutos (execução)
     └─ O quê: 5 cenários rápidos
        - Pipeline completo
@@ -89,7 +89,7 @@ CÓDIGO EXEMPLOS (execute depois):
        - Verificações
 
 [4] src/examples.py
-    ├─ Status: ✅ EXPLORE
+   ├─ Status: EXPLORE
     ├─ Tempo: 15 minutos
     └─ O quê: 6 exemplos detalhados
        - Exemplo 1: Pipeline automático
@@ -100,7 +100,7 @@ CÓDIGO EXEMPLOS (execute depois):
        - Exemplo 6: Validação de lógica
 
 [5] src/MIGRATION_GUIDE.py
-    ├─ Status: ✅ COMPARE
+   ├─ Status: COMPARE
     ├─ Tempo: 10 minutos
     └─ O quê: Antes vs. Depois
        - Estrutura antiga vs. nova
@@ -113,7 +113,7 @@ CÓDIGO PRINCIPAL (navegar depois):
 ──────────────────────────────────
 
 [6] src/config.py
-    ├─ Status: 📚 CONSULTA
+   ├─ Status: CONSULTA
     ├─ Tempo: 5 minutos (ler)
     └─ O quê: Configurações centralizadas
        - Caminhos de arquivos
@@ -122,7 +122,7 @@ CÓDIGO PRINCIPAL (navegar depois):
        - Parâmetros
 
 [7] src/selection.py
-    ├─ Status: 📚 CONSULTA
+   ├─ Status: CONSULTA
     ├─ Tempo: 3 minutos (ler)
     └─ O quê: Seleção de features
        - VARIABLES_MAP
@@ -130,7 +130,7 @@ CÓDIGO PRINCIPAL (navegar depois):
        - ~80 linhas
 
 [8] src/preprocessing.py
-    ├─ Status: 📚 PRINCIPAL
+   ├─ Status: PRINCIPAL
     ├─ Tempo: 10 minutos (ler)
     └─ O quê: Limpeza e validação
        - 18 funções tratar_*
@@ -139,7 +139,7 @@ CÓDIGO PRINCIPAL (navegar depois):
        - Maioria das operações
 
 [9] src/feature_engineering.py
-    ├─ Status: 📚 PRINCIPAL
+   ├─ Status: PRINCIPAL
     ├─ Tempo: 8 minutos (ler)
     └─ O quê: Engenharia de features
        - One-hot encoding
@@ -149,7 +149,7 @@ CÓDIGO PRINCIPAL (navegar depois):
        - ~350 linhas
 
 [10] src/transformation.py
-     ├─ Status: 📚 PRINCIPAL
+   ├─ Status: PRINCIPAL
      ├─ Tempo: 3 minutos (ler)
      └─ O quê: Transformações estatísticas
         - Log de renda
@@ -158,7 +158,7 @@ CÓDIGO PRINCIPAL (navegar depois):
         - ~80 linhas
 
 [11] src/pipeline.py
-     ├─ Status: 📚 ORQUESTRADOR
+   ├─ Status: ORQUESTRADOR
      ├─ Tempo: 5 minutos (ler)
      └─ O quê: Coordenador principal
         - run_preprocessing_pipeline()
@@ -167,11 +167,11 @@ CÓDIGO PRINCIPAL (navegar depois):
         - ~150 linhas
 
 [12] src/evaluation.py
-     ├─ Status: ⏳ FUTURO
+   ├─ Status: FUTURO
      └─ O quê: Placeholder para avaliação
 
 [13] src/modeling.py
-     ├─ Status: ⏳ FUTURO
+   ├─ Status: FUTURO
      └─ O quê: Placeholder para modelos
 
 
@@ -179,7 +179,7 @@ NOTEBOOK (atualizado):
 ─────────────────────
 
 [14] notebooks/01_pre_processamento.ipynb
-     ├─ Status: ✅ ATUALIZADO
+   ├─ Status: ATUALIZADO
      └─ O quê: Notebook reformulado
         - Agora importa e usa o pipeline
         - Mantém estrutura exploratória
@@ -187,7 +187,7 @@ NOTEBOOK (atualizado):
 """
 
 # =============================================================================
-# 🗺️ FLUXO DE LEITURA RECOMENDADO
+# FLUXO DE LEITURA RECOMENDADO
 # =============================================================================
 
 """
@@ -344,7 +344,7 @@ Reusabilidade                      Máxima (importar função)
 """
 
 # =============================================================================
-# ✅ CHECKLIST
+# CHECKLIST
 # =============================================================================
 
 """
@@ -374,7 +374,7 @@ PARA ESTENDER O CÓDIGO:
 """
 
 # =============================================================================
-# 🆘 TROUBLESHOOTING
+# TROUBLESHOOTING
 # =============================================================================
 
 """

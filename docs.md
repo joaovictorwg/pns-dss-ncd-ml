@@ -1,3 +1,86 @@
+## Documentacao metodologica e decisoes
+
+Esta secao consolida as escolhas metodologicas do projeto, incluindo criterios de selecao de variaveis e justificativas teoricas para cada bloco analitico.
+
+### 1. Processo de selecao de variaveis
+
+A selecao das variaveis foi conduzida em tres etapas:
+
+1. Revisao bibliografica sobre Determinantes Sociais da Saude (DSS) e Doencas Cronicas Nao Transmissiveis (DCNT).
+2. Mapeamento dos codigos no dicionario oficial da PNS (`dicionario_PNS_microdados.xls`).
+3. Revalidacao das escolhas com base na literatura para garantir consistencia epidemiologica.
+
+### 2. Justificativas por bloco de variaveis
+
+#### 2.1 Variaveis demograficas basicas
+
+Variaveis: idade, sexo, raca/cor.
+
+Justificativa: sao determinantes fundamentais da saude e variaveis de controle classicas em epidemiologia. A idade se relaciona ao risco cumulativo de DCNT; sexo capta diferencas biologicas e sociais; raca/cor funciona como marcador de desigualdades estruturais no contexto brasileiro.
+
+Base teorica: OMS; Marmot et al.; Barros et al.
+
+#### 2.2 Escolaridade e renda
+
+Variaveis: alfabetizacao, escolaridade, renda domiciliar/per capita.
+
+Justificativa: representam a posicao socioeconomica, com forte associacao a exposicao a risco, acesso a informacao e uso de servicos preventivos. Sao centrais na literatura de DSS e em estudos com a PNS.
+
+Base teorica: Dahlgren e Whitehead; Malta et al.; OMS.
+
+#### 2.3 Regiao geografica e UF
+
+Variaveis: regiao e unidade federativa.
+
+Justificativa: capturam desigualdades territoriais e contextuais (infraestrutura, urbanizacao, oferta de servicos e exposicao ambiental) nao explicadas apenas por atributos individuais.
+
+Base teorica: IBGE; Malta et al.; Marmot et al.
+
+#### 2.4 Moradia e infraestrutura
+
+Variaveis: tipo de domicilio, acesso a agua, agua canalizada, acesso a internet.
+
+Justificativa: representam determinantes intermediarios de saude e condicoes materiais de vida. A internet tambem foi tratada como indicador de inclusao social e acesso a informacao.
+
+Base teorica: OMS; Dahlgren e Whitehead; estudos brasileiros de DSS.
+
+#### 2.5 Plano de saude privado
+
+Variavel: posse de plano de saude.
+
+Justificativa: proxy de acesso diferencial a servicos de saude no sistema misto brasileiro (SUS + setor privado), com impacto potencial em diagnostico e prevalencia observada.
+
+Base teorica: IBGE; Malta et al.
+
+#### 2.6 Ambiente de trabalho
+
+Variaveis: ambiente ocupacional (aberto/fechado) e tempo de deslocamento.
+
+Justificativa: refletem exposicoes ocupacionais e carga cotidiana associadas a desfechos cronicos, incluindo componentes de estresse e risco ambiental/laboral.
+
+Base teorica: OMS; literatura de saude ocupacional e DSS.
+
+#### 2.7 Estilo de vida
+
+Variaveis: tabagismo, alcool, atividade fisica, dieta, IMC.
+
+Justificativa: determinantes individuais e variaveis mediadoras entre contexto social e desfechos de DCNT, analisadas em modelos especificos para avaliar impacto incremental.
+
+Base teorica: OMS; GBD; Marmot et al.
+
+#### 2.8 Doencas cronicas (desfechos)
+
+Justificativa geral: desfechos definidos por diagnostico medico autorreferido, conforme padrao da PNS. A literatura aponta validade aceitavel desse tipo de medida em inqueritos populacionais. O conjunto de desfechos foi organizado para robustez estatistica e coerencia clinica.
+
+Base teorica: IBGE; Schmidt et al.; Lima-Costa e Barreto.
+
+### 3. Registro das decisoes de implementacao
+
+- Foi criado um dicionario de variaveis focado no recorte analitico do projeto.
+- O ambiente de desenvolvimento foi estruturado com `venv` e Jupyter para reproducao do fluxo de analise.
+
+---
+
 Os microdados da PNS foram processados inicialmente no ambiente SAS OnDemand for Academics, por meio da execução dos scripts oficiais disponibilizados pelo IBGE, garantindo fidelidade ao layout original dos dados.
 
 ## SAS
