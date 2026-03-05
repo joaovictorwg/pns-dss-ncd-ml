@@ -1,9 +1,7 @@
-
-data/PNS_2019.txt
-ibge-official-files/ziped-files-pns
-ibge-official-files/
+VALIDATION_CHECKLIST.py
+MIGRATION_GUIDE.py
+*.zip
 tcc_venv
-PNS_2019.txt
 
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
@@ -185,3 +183,5 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks
+
+REFATORACAO_RESUMO.txt
