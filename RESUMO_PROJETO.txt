@@ -1,0 +1,225 @@
+================================================================================
+RESUMO DO PROJETO - PNS DSS NCD ML
+================================================================================
+
+OBJETIVO
+Analisar Determinantes Sociais da Saude (DSS) e Doencas Cronicas Nao
+Transmissiveis (DCNT) com base nos microdados da Pesquisa Nacional de Saude
+(PNS 2019), utilizando pipeline de preprocessamento em Python.
+
+================================================================================
+O QUE FOI FEITO
+================================================================================
+
+1. SELECAO DE VARIAVEIS
+   - Revisao bibliografica sobre DSS e DCNT
+   - Mapeamento de codigos no dicionario oficial da PNS
+   - Revalidacao com literatura epidemiologica
+   - Resultado: 37 variaveis selecionadas de ~1.088
+
+2. ARQUITETURA DE PROCESSAMENTO
+   - 7 modulos Python criados:
+     * selection.py - selecao de features
+     * preprocessing.py - limpeza e validacao (18 funcoes)
+     * feature_engineering.py - engenharia de atributos (8 funcoes)
+     * transformation.py - transformacoes estatisticas
+     * pipeline.py - orquestrador principal
+     * config.py - configuracoes centralizadas
+     * evaluation.py - placeholder (futuro)
+
+3. PREPROCESSAMENTO
+   - Conversao de microdados (SAS OnDemand) para CSV
+   - Tratamento de variaveis categoricas (one-hot encoding)
+   - Tratamento de variaveis ordinais
+   - Limpeza de valores ausentes e inconsistentes
+   - Validacao de ranges biologicos (peso, altura)
+   - Tratamento de saltos logicos (gate questions)
+
+4. FEATURE ENGINEERING
+   - IMC (peso e altura)
+   - Combinacoes de tabagismo, alcool, atividade fisica
+   - Ordinais de escolaridade e renda
+   - Centering e polinomios de idade
+
+5. TRANSFORMACOES ESTATISTICAS
+   - Log de renda (winsorizado no percentil 99)
+   - Centralizacao de variaveis continuas
+   - Polinomios (idade quadrada)
+
+6. ANALISE EXPLORATORIA
+   - Notebook Jupyter criado: notebooks/analise_exploratoria.ipynb
+   - Previas de dados
+   - Distribuicoes e missingss
+   - Correlacoes
+   - Analise geografica com geopandas
+   - Qualidade de vida vs socioeconomia
+
+7. DOCUMENTACAO
+   - README.md - apresentacao do projeto
+   - docs.md - metodologia e decisoes tecnicas
+   - src/README.md - documentacao dos modulos
+   - src/INDEX.md - guia de navegacao
+   - Sem emojis, padronizado
+
+================================================================================
+ESTRUTURA ATUAL
+================================================================================
+
+data/
+  ├── raw/            [PNS 2019 microdados]
+  ├── processed/      [dados limpados e transformados]
+  └── config/         [configuracoes]
+
+notebooks/
+  └── analise_exploratoria.ipynb
+
+src/
+  ├── selection.py
+  ├── preprocessing.py
+  ├── feature_engineering.py
+  ├── transformation.py
+  ├── pipeline.py
+  ├── config.py
+  ├── evaluation.py (placeholder)
+  └── examples.py
+
+ibge-official-files/     [arquivos oficiais IBGE]
+
+BASE FINAL
+  - 79.722 individuos
+  - 71 variaveis (42 booleanas, 27 float, 2 int)
+  - Tamanho: ~20,8 MB
+  - Pronta para modelagem
+
+================================================================================
+STATUS
+================================================================================
+
+CONCLUIDO
+  [X] Selecao teorica de variaveis
+  [X] Preprocessamento (limpeza, validacao)
+  [X] Feature engineering
+  [X] Transformacoes estatisticas
+  [X] Pipeline automatizado
+  [X] Analise exploratoria inicial
+  [X] Documentacao metodologica
+  [X] Ambiente de desenvolvimento (venv + Jupyter)
+
+PROXIMOS PASSOS (FUTURO)
+  [ ] Modelagem preditiva (LASSO, Random Forest)
+  [ ] Validacao e cross-validation
+  [ ] Feature selection
+  [ ] Interpretabilidade de modelos
+  [ ] Publicacao de resultados
+
+================================================================================
+COMO USAR
+================================================================================
+
+1. Ativar ambiente:
+   $ source tcc_venv/Scripts/activate
+
+2. Executar pipeline:
+   $ python -c "from src.pipeline import run_preprocessing_pipeline; df = run_preprocessing_pipeline()"
+
+3. Ou executar notebook:
+   $ jupyter notebook notebooks/analise_exploratoria.ipynb
+
+4. Ou executar exemplos:
+   $ python src/examples.py 1
+
+================================================================================
+TECNOLOGIAS
+================================================================================
+
+Python 3.7+
+pandas, numpy, matplotlib, seaborn, geopandas, scikit-learn
+SAS OnDemand for Academics (processamento inicial)
+Jupyter Notebook
+
+================================================================================
+REPOSITORIO
+================================================================================
+
+GitHub: https://github.com/joaovictorwg/pns-dss-ncd-ml
+Arquivos grandes (.txt, .csv >100MB) ignorados via .gitignore
+
+================================================================================
+
+VARIAVEIS
+<class 'pandas.DataFrame'>
+Index: 87657 entries, 0 to 293720
+Data columns (total 69 columns):
+ #   Column                  Non-Null Count  Dtype  
+---  ------                  --------------  -----  
+ 0   situacao_domicilio      87657 non-null  Int64  
+ 1   acesso_internet         87657 non-null  Int64  
+ 2   plano_saude             87657 non-null  float64
+ 3   hipertensao             85995 non-null  float64
+ 4   diabetes                81504 non-null  float64
+ 5   doenca_coracao          87657 non-null  float64
+ 6   infarto                 87657 non-null  float64
+ 7   angina                  87657 non-null  float64
+ 8   insuficiencia_cardiaca  87657 non-null  float64
+ 9   arritmia                87657 non-null  float64
+ 10  avc                     87657 non-null  float64
+ 11  asma                    87657 non-null  float64
+ 12  artrite                 87657 non-null  float64
+ 13  dort                    87657 non-null  float64
+ 14  depressao               87657 non-null  float64
+ 15  doenca_pulmao           87657 non-null  float64
+ 16  enfisema                87657 non-null  float64
+ 17  bronquite               87657 non-null  float64
+ 18  insuficiencia_renal     87657 non-null  float64
+ 19  infra_agua              87657 non-null  Int64  
+ 20  sexo_feminino           87657 non-null  Int64  
+ 21  n_doencas               87657 non-null  Int64  
+ 22  doenca_cronica          87657 non-null  Int64  
+ 23  uf_AL                   87657 non-null  bool   
+ 24  uf_AM                   87657 non-null  bool   
+ 25  uf_AP                   87657 non-null  bool   
+ 26  uf_BA                   87657 non-null  bool   
+ 27  uf_CE                   87657 non-null  bool   
+ 28  uf_DF                   87657 non-null  bool   
+ 29  uf_ES                   87657 non-null  bool   
+ 30  uf_GO                   87657 non-null  bool   
+ 31  uf_MA                   87657 non-null  bool   
+ 32  uf_MG                   87657 non-null  bool   
+ 33  uf_MS                   87657 non-null  bool   
+ 34  uf_MT                   87657 non-null  bool   
+ 35  uf_PA                   87657 non-null  bool   
+ 36  uf_PB                   87657 non-null  bool   
+ 37  uf_PE                   87657 non-null  bool   
+ 38  uf_PI                   87657 non-null  bool   
+ 39  uf_PR                   87657 non-null  bool   
+ 40  uf_RJ                   87657 non-null  bool   
+ 41  uf_RN                   87657 non-null  bool   
+ 42  uf_RO                   87657 non-null  bool   
+ 43  uf_RR                   87657 non-null  bool   
+ 44  uf_RS                   87657 non-null  bool   
+ 45  uf_SC                   87657 non-null  bool   
+ 46  uf_SE                   87657 non-null  bool   
+ 47  uf_SP                   87657 non-null  bool   
+ 48  uf_TO                   87657 non-null  bool   
+ 49  domicilio_Apartamento   87657 non-null  bool   
+ 50  domicilio_Cortico       87657 non-null  bool   
+ 51  domicilio_Ignorado      87657 non-null  bool   
+ 52  raca_Preta              87657 non-null  bool   
+ 53  raca_Amarela            87657 non-null  bool   
+ 54  raca_Parda              87657 non-null  bool   
+ 55  raca_Indigena           87657 non-null  bool   
+ 56  raca_Ignorado           87657 non-null  bool   
+ 57  escolaridade_ord        80390 non-null  float64
+ 58  imc                     87657 non-null  float64
+ 59  tabagismo_status        87657 non-null  Int64  
+ 60  tabagismo_ativo         87657 non-null  boolean
+ 61  alcool_status           87657 non-null  Int64  
+ 62  alcool_ativo            87657 non-null  boolean
+ 63  atividade_status        87657 non-null  Int64  
+ 64  atividade_ativo         87657 non-null  boolean
+ 65  renda_domiciliar_log    87657 non-null  float64
+ 66  renda_per_capita_log    87657 non-null  float64
+ 67  idade_c                 87657 non-null  float64
+ 68  idade_c2                87657 non-null  float64
+dtypes: Int64(9), bool(34), boolean(3), float64(23)
+memory usage: 26.2 MB

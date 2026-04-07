@@ -120,6 +120,9 @@ A variável A00601 (forma de acesso à água) foi codificada de forma ordinal, r
 ### Sexo
 A variável sexo (C006) foi convertida em variável binária indicadora (‘sexo_feminino’), assumindo valor 1 para mulheres e 0 para homens. Essa transformação permite incorporação direta nos modelos de regressão regularizada (LASSO) e nos modelos baseados em árvores, assegurando interpretação clara do efeito associado ao sexo na predição das doenças crônicas analisadas.
 
+### Nota sobre variavel sexo e questão de genero
+É imperativo ressaltar que a análise conduzida neste trabalho utilizou a variável 'sexo', conforme disponibilizada nos microdados da Pesquisa Nacional de Saúde (PNS) 2019. Esta variável, embora essencial, limita-se a capturar aspectos biológicos e binários, não contemplando a complexidade da identidade de gênero.A ausência da variável gênero representa uma lacuna significativa, uma vez que esta dimensão traria à luz as disparidades sociais profundas enfrentadas por mulheres cisgênero, homens cisgênero, além de pessoas trans (masculino e feminino) e indivíduos não binários. Conforme discutido no referencial teórico deste estudo, os Determinantes Sociais da Saúde (DSS) são moldados pela distribuição de poder e recursos na sociedade. Nesse sentido, a população trans, por exemplo, enfrenta barreiras estruturais de acesso, preconceito sistêmico e uma das maiores taxas de mortalidade no Brasil, fatores que influenciam diretamente o desenvolvimento e o manejo de doenças crônicas.Portanto, destaca-se como uma limitação deste trabalho — e uma falha nas bases de dados nacionais vigentes — a impossibilidade de modelar o impacto do gênero como um DSS autêntico. Fica aqui a recomendação para que futuros ciclos da PNS e novos esforços de modelagem preditiva busquem a inclusão dessas variáveis, permitindo que a Inteligência Artificial seja utilizada para identificar e mitigar iniquidades que hoje permanecem invisíveis aos algoritmos tradicionais.
+
 ### Idade
 Idade
 
@@ -581,3 +584,106 @@ Desfechos gerais (ex.: presença de doença cardíaca)
 Subtipos específicos
 
 Comparações entre diferentes condições crônicas
+
+
+# MODELAGEM
+
+## REGRESSÃO LINEAR LASSO L1
+As variaveis escolhidas para entrar na modelagem foram:
+
+Dois datasets foram criados, um com DSS + Biomedicas + comportamentais
+Outro sem DSS.
+
+O target escolhido foi a variavel criada 'doenca_cronica' que é um boolean, identificando indivudoes que tem ou não uma doença cronica qualquer
+
+Teremos então 2 modelos:
+- Modelo 1: Inclui DSS + Biomedicas + Comportamentais
+- Modelo 2: Não inclui DSS
+
+Então foram dividos 4 datasets, 2 para treino e 2 para teste. X1_test e X1_treino para modelo 1 e X2_teste e X2_treino para modelo 2
+
+O modelo LASSO necessita de uma escala padronizada, para isso foi utilizada a função StandartScaler e a padronização foi realizada em todos os 4 datasets
+
+Agora inicia o treinamento, o modelo escolhido foi o LogisticRegressionCV, por:
+Para a otimização do modelo de Regressão Logística com regularização LASSO ($L_1$), optou-se pela utilização da classe LogisticRegressionCV. Esta escolha justifica-se pela necessidade de garantir que o hiperparâmetro de regularização ($C$) seja selecionado de forma automatizada e imparcial, mitigando o risco de sobreajuste (overfitting) e garantindo a generalização dos padrões descobertos para dados inéditos.Diferente da abordagem manual, o processo de validação cruzada estratificada ($k$-fold) subdivide o conjunto de treinamento em múltiplos subconjuntos, permitindo que a força da penalidade seja testada e validada em diferentes partições da base de dados. No contexto desta pesquisa, onde a prevalência de Doenças Crônicas Não Transmissíveis (DCNT) pode apresentar assimetrias, o uso de CV assegura que a métrica de desempenho (como a AUC-ROC) seja estável e representativa da população real, conferindo maior confiabilidade científica à identificação dos Determinantes Sociais da Saúde (DSS) como variáveis preditivas relevantes.
+
+JUSTIFICATIVA DA DEFINIÇÃO DOS MODELOS
+A configuração dos modelos preditivos fundamentou-se em parâmetros que asseguram o rigor estatístico e a eficiência computacional necessários para a análise de grandes volumes de dados. A escolha do algoritmo SAGA como otimizador (solver) justifica-se por sua versatilidade em lidar com a penalidade LASSO ($L_1$) em problemas de classificação binária de larga escala, apresentando uma convergência superior em bases de dados extensas como a PNS 2019.Além disso, a definição dos seguintes parâmetros foi essencial para a robustez da mineração:Penalidade $L_1$ (LASSO): Aplicada para induzir esparsidade no vetor de pesos, permitindo a seleção automática de atributos (embedded feature selection) e facilitando a identificação dos Determinantes Sociais da Saúde (DSS) com maior relevância preditiva.Validação Cruzada ($cv=5$): Implementada para mitigar o viés de seleção e garantir que o desempenho do modelo seja validado em diferentes partições dos dados, aumentando a repetibilidade do estudo.Métrica de Avaliação (scoring="roc_auc"): Optou-se pela Área sob a Curva ROC por ser uma métrica robusta ao desbalanceamento de classes, comum em diagnósticos epidemiológicos autorreferidos.Máximo de Iterações (max_iter=5000): Definido para garantir a convergência total dos coeficientes, evitando interrupções prematuras do algoritmo de otimização em modelos complexos que integram variáveis sociais e biomédicas.Processamento Paralelo (n_jobs=-1): Utilizado para otimizar o tempo de execução, permitindo que a busca de hiperparâmetros ocorra simultaneamente em todos os núcleos de processamento disponíveis
+
+João Victor, esses passos que você estruturou são o "coração" da sua análise de resultados. Eles fecham o ciclo do processo KDD, transformando a mineração de dados em conhecimento compreensível.Como seu orientador, preparei uma justificativa acadêmica para cada bloco, conectando-os aos seus objetivos específicos e à literatura que sustenta o seu TCC.1. Justificativa das Métricas de Avaliação (AUC, Accuracy, Report)"A avaliação do desempenho dos modelos não se limitou à acurácia global, visto que esta métrica pode ser mascarada pelo desbalanceamento de classes em dados epidemiológicos. A utilização da AUC-ROC justifica-se por fornecer uma medida de capacidade discriminativa que independe do limiar de classificação. Complementarmente, o classification_report permite analisar a Precisão, o Recall (Sensibilidade) e o F1-Score, garantindo que o modelo seja capaz de identificar corretamente indivíduos com DCNT sem gerar um volume excessivo de falsos positivos, atendendo ao rigor exigido em saúde pública."2. Justificativa da Matriz de Confusão"A análise da Matriz de Confusão foi essencial para identificar o padrão de erros dos modelos. No contexto de doenças crônicas, a minimização de falsos negativos é crítica, pois o subdiagnóstico impede ações preventivas oportunas. Esta representação estrutural permite verificar a utilidade prática do modelo para a vigilância epidemiológica brasileira."3. Justificativa da Extração de Coeficientes e Seleção LASSO"A extração dos coeficientes quantifica a influência direta de cada atributo no desfecho predito. A justificativa para o uso do LASSO reside em sua propriedade de induzir esparsidade, zerando variáveis irrelevantes ou redundantes. Este processo realiza uma seleção de atributos embutida (embedded feature selection), que confere interpretabilidade ao modelo ao destacar apenas os Determinantes Sociais da Saúde (DSS) e variáveis biomédicas que possuem impacto estatístico real na predição das DCNT."4. Justificativa do Odds Ratio (Razão de Chances)"A transformação dos coeficientes em Odds Ratio (OR), por meio da função exponencial, é fundamental para a tradução dos resultados computacionais para a linguagem epidemiológica. O OR facilita a interpretação do risco associado a cada determinante social: valores superiores a 1 indicam fatores que aumentam a chance de ocorrência de DCNT, enquanto valores inferiores a 1 sugerem fatores protetivos. Esta análise responde diretamente ao objetivo de quantificar o impacto relativo dos DSS no contexto brasileiro."
+
+#### Primeira leva de modelagem:
+Resumo dos Resultados — Modelos com Regressão Logística LASSO
+
+Foram estimados dois modelos de regressão logística com regularização L1 (LASSO) para predição de presença de doença crônica.
+
+Modelo 1: inclui determinantes sociais da saúde (DSS), variáveis demográficas, comportamentais e biomédicas.
+
+Modelo 2: inclui apenas variáveis demográficas, comportamentais e biomédicas, sem DSS.
+
+A avaliação foi realizada utilizando conjunto de teste independente.
+
+Desempenho dos Modelos
+Métrica	Modelo 1 (com DSS)	Modelo 2 (sem DSS)
+AUC	0.766	0.764
+Accuracy	0.706	0.704
+Recall (doença)	0.66	0.65
+F1-score	0.68	0.67
+
+Os resultados indicam que ambos os modelos apresentam desempenho semelhante, com leve vantagem para o modelo que incorpora determinantes sociais da saúde.
+
+A inclusão das variáveis sociais resultou em pequeno ganho na capacidade discriminativa do modelo (ΔAUC ≈ 0.002).
+
+Principais Variáveis Associadas à Doença Crônica
+
+A interpretação dos coeficientes foi realizada por meio das odds ratios (OR).
+
+As variáveis com maior impacto no modelo foram:
+
+Variável	Odds Ratio
+Idade	~2.49
+IMC	~1.42
+Tabagismo	~1.25
+Sexo feminino	~1.16
+
+Esses resultados indicam que fatores biomédicos e comportamentais apresentam maior influência na predição individual de doença crônica, especialmente idade e índice de massa corporal.
+
+Entre os determinantes sociais incluídos no modelo, observaram-se efeitos de menor magnitude, porém consistentes, como:
+
+escolaridade
+
+raça/cor
+
+renda
+
+infraestrutura domiciliar
+
+Interpretação Geral
+
+Os resultados sugerem que:
+
+variáveis biomédicas e comportamentais dominam a predição individual da ocorrência de doenças crônicas,
+
+enquanto determinantes sociais da saúde contribuem de forma adicional, porém com impacto menor no desempenho preditivo do modelo.
+
+Esse comportamento é esperado em bases populacionais, nas quais fatores sociais influenciam principalmente a distribuição populacional do risco, enquanto fatores clínicos possuem maior poder discriminativo individual.
+
+Próximos Passos da Análise
+
+Com base nesses resultados iniciais, serão conduzidos novos experimentos para aprimorar a análise, incluindo:
+
+avaliação da importância relativa das variáveis selecionadas pelo LASSO;
+
+análise específica do impacto dos determinantes sociais da saúde;
+
+testes com diferentes estratégias de modelagem e seleção de variáveis;
+
+investigação de possíveis colinearidades entre variáveis comportamentais;
+
+comparação mais detalhada entre os modelos com e sem DSS.
+
+Essas etapas visam aprofundar a compreensão do papel dos determinantes sociais na predição de doenças crônicas.
+
+---
+
+

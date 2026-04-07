@@ -377,6 +377,33 @@ def tratar_atividade_fisica(df):
     return df_temp
 
 
+def criar_faixa_etaria(df):
+    """
+    Cria variável categórica de faixa etária a partir de idade.
+    
+    Categorias:
+    - 18-29 anos
+    - 30-39 anos
+    - 40-49 anos
+    - 50-59 anos
+    - 60+ anos
+    
+    IMPORTANTE: Esta função deve ser chamada ANTES de transformation.py
+    (que remove a coluna 'idade'). Usa a idade original, não idade_c ou idade_c2.
+    """
+    
+    df_temp = df.copy()
+    
+    df_temp['faixa_etaria'] = pd.cut(
+        df_temp['idade'],
+        bins=[18, 30, 40, 50, 60, 120],
+        labels=['18-29', '30-39', '40-49', '50-59', '60+'],
+        include_lowest=True
+    )
+    
+    return df_temp
+
+
 def apply_feature_engineering(df):
     """
     Função orquestradora aplica engenharia de features
@@ -411,7 +438,69 @@ def apply_feature_engineering(df):
     df_feat = tratar_tabagismo(df_feat)
     df_feat = tratar_alcool(df_feat)
     df_feat = tratar_atividade_fisica(df_feat)
+    df_feat = criar_faixa_etaria(df_feat)
 
+    # ===== Variáveis derivadas adicionais para compatibilidade com dicionário =====
+    # 1. Interação idade_imc
+    if 'idade_c' in df_feat.columns and 'imc' in df_feat.columns:
+        df_feat['idade_imc'] = df_feat['idade_c'] * df_feat['imc']
+    # 2. Variáveis de região
+    uf_regioes = {
+        'regiao_norte': ['AC', 'AP', 'AM', 'PA', 'RO', 'RR', 'TO'],
+        'regiao_nordeste': ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'],
+        'regiao_centro_oeste': ['DF', 'GO', 'MT', 'MS'],
+        'regiao_sudeste': ['ES', 'MG', 'RJ', 'SP'],
+        'regiao_sul': ['PR', 'RS', 'SC']
+    }
+    for reg, ufs in uf_regioes.items():
+        colnames = [f'uf_{uf}' for uf in ufs if f'uf_{uf}' in df_feat.columns]
+        if colnames:
+            df_feat[reg] = df_feat[colnames].any(axis=1).astype(int)
+        else:
+            df_feat[reg] = 0
+    # 3. Índice socioeconômico
+    df_feat = add_socioeconomic_index(df_feat)
     print(f"Engenharia completa: {df_feat.shape[0]} registros, {df_feat.shape[1]} features")
-
     return df_feat
+
+# Função para ser chamada após as transformações estatísticas (após existir renda_per_capita_log e idade_c)
+def add_socioeconomic_index(df):
+    """
+    Adiciona esc_scaled, renda_scaled e indice_socioeconomico ao DataFrame.
+
+    Regras para renda_scaled:
+    - Usa renda_per_capita_log quando já existir.
+    - Se ainda não existir (etapa de engenharia), usa log1p(renda_per_capita).
+    """
+    df_out = df.copy()
+
+    if 'escolaridade_ord' in df_out.columns:
+        esc_mean = df_out['escolaridade_ord'].mean()
+        esc_std = df_out['escolaridade_ord'].std(ddof=0)
+        df_out['esc_scaled'] = (df_out['escolaridade_ord'] - esc_mean) / esc_std if esc_std > 0 else 0
+
+    renda_base = None
+    if 'renda_per_capita_log' in df_out.columns:
+        renda_base = df_out['renda_per_capita_log']
+    elif 'renda_per_capita' in df_out.columns:
+        renda_base = np.log1p(df_out['renda_per_capita'])
+
+    if renda_base is not None:
+        renda_mean = renda_base.mean()
+        renda_std = renda_base.std(ddof=0)
+        df_out['renda_scaled'] = (renda_base - renda_mean) / renda_std if renda_std > 0 else 0
+
+    if 'esc_scaled' in df_out.columns and 'renda_scaled' in df_out.columns:
+        df_out['indice_socioeconomico'] = df_out[['esc_scaled', 'renda_scaled']].mean(axis=1)
+
+    return df_out
+
+
+def apply_post_transformation_feature_engineering(df):
+    """
+    Aplica features de engenharia que dependem de colunas criadas em
+    transformation.py (ex.: renda_per_capita_log).
+    """
+    df_out = df.copy()
+    df_out = add_socioeconomic_index(df_out)
+    return df_out

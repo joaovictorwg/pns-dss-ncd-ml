@@ -20,6 +20,7 @@ SELECTED_DATA_FILE = PROCESSED_DATA_DIR / "pns_2019_selected.csv"
 CLEANED_DATA_FILE = PROCESSED_DATA_DIR / "pns_2019_cleaned.csv"
 ENGINEERED_DATA_FILE = PROCESSED_DATA_DIR / "pns_2019_engineered.csv"
 TRANSFORMED_DATA_FILE = PROCESSED_DATA_DIR / "pns_2019_transformed.csv"
+FINAL_DATA_FILE = PROCESSED_DATA_DIR / "pns_2019_final.csv"
 
 # Parâmetros de limpeza
 MIN_AGE = 18

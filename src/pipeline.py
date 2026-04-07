@@ -6,11 +6,14 @@ Pipeline principal para orquestração do flucxo completo de pré-processamento
 import pandas as pd
 from selection import select_features
 from preprocessing import clean_pns_data
-from feature_engineering import apply_feature_engineering
+from feature_engineering import (
+    apply_feature_engineering,
+    apply_post_transformation_feature_engineering,
+)
 from transformation import apply_transformations
 from config import (
     RAW_DATA_FILE, SELECTED_DATA_FILE,
-    CLEANED_DATA_FILE, ENGINEERED_DATA_FILE, TRANSFORMED_DATA_FILE
+    CLEANED_DATA_FILE, ENGINEERED_DATA_FILE, TRANSFORMED_DATA_FILE, FINAL_DATA_FILE
 )
 
 
@@ -113,6 +116,7 @@ def run_preprocessing_pipeline(
         print("-" * 70)
 
         df_engineered = apply_feature_engineering(df_cleaned)
+        df_engineered = apply_post_transformation_feature_engineering(df_engineered)
 
         if save_intermediate:
             df_engineered.to_csv(ENGINEERED_DATA_FILE, index=False)
@@ -133,14 +137,14 @@ def run_preprocessing_pipeline(
         df_final = apply_transformations(df_engineered)
 
         if save_intermediate:
-            df_final.to_csv(TRANSFORMED_DATA_FILE, index=False)
-            print(f"   Salvo: {TRANSFORMED_DATA_FILE}")
+            df_final.to_csv(FINAL_DATA_FILE, index=False)
+            print(f"   Salvo: {FINAL_DATA_FILE}")
     else:
         try:
-            df_final = pd.read_csv(TRANSFORMED_DATA_FILE)
-            print(f"[4/4] Carregado de {TRANSFORMED_DATA_FILE}: {df_final.shape}")
+            df_final = pd.read_csv(FINAL_DATA_FILE)
+            print(f"[4/4] Carregado de {FINAL_DATA_FILE}: {df_final.shape}")
         except FileNotFoundError:
-            print(f"Arquivo transformado não encontrado.")
+            print(f"Arquivo final não encontrado.")
             raise
 
     # ============ Resumo Final ============
@@ -160,6 +164,8 @@ def run_preprocessing_pipeline(
 if __name__ == "__main__":
     # Executar pipeline completo com salvamento
     df = run_preprocessing_pipeline(save_intermediate=True)
+    
+    
 
     # Exibir informações básicas
     print("\nPrimeiras linhas:")

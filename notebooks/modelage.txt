@@ -1,0 +1,592 @@
+import pandas as pd
+import numpy as np
+
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+from sklearn.linear_model import LogisticRegressionCV
+
+from sklearn.metrics import (
+    accuracy_score,
+    roc_auc_score,
+    classification_report,
+    confusion_matrix,
+    RocCurveDisplay
+)
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from imblearn.over_sampling import SMOTE
+
+from sklearn.metrics import precision_recall_curve, f1_score
+
+
+
+df = pd.read_csv('../data/processed/pns_2019_transformed.csv')
+df.shape
+df = df.dropna()
+df.shape
+df.info()
+# Contagem absoluta
+contagem = df["hipertensao"].value_counts(dropna=False)
+
+# Proporção
+proporcao = (
+    df["hipertensao"]
+    .value_counts(normalize=True, dropna=False)
+    .mul(100)
+    .round(2)
+)
+
+resumo = pd.DataFrame({
+    "qtd": contagem,
+    "percentual_%": proporcao
+})
+
+resumo
+df["hipertensao"].value_counts(normalize=True)
+### Testar Interações entre Variaveis
+
+# interação entre escolaridade e atividade física
+df["esc_x_atividade"] = df["escolaridade_ord"] * df["atividade_ativo"] 
+
+# interação entre escolaridade e tabagismo
+df["esc_x_tabagismo"] = df["escolaridade_ord"] * df["tabagismo_ativo"]
+
+# interação entre escolaridade e alcoolismo
+df["esc_x_alcool"] = df["escolaridade_ord"] * df["alcool_ativo"]
+
+# interação entre renda e imc
+df["renda_x_imc"] = df["renda_per_capita_log"] * df["imc"]
+
+# interação entre infraestrutura e atividade física
+df["infra_x_atividade"] = df["infra_agua"] * df["atividade_ativo"]
+
+# interação entre sexo e comportamento
+df["sexo_x_atividade"] = df["sexo_feminino"] * df["atividade_ativo"]
+df["sexo_x_imc"] = df["sexo_feminino"] * df["imc"]
+
+# interação entre atividade física e imc, tabagismo e imc
+df["atividade_x_imc"] = df["atividade_ativo"] * df["imc"]
+df["tabagismo_x_imc"] = df["tabagismo_ativo"] * df["imc"]
+# verifica valores de situacao_domicilio
+# hipertensao               27.052396
+# depressao                  9.329592
+# diabetes                   8.352152
+df["hipertensao"].value_counts()
+df["esc_x_idade"] = df["escolaridade_ord"] * df["idade_c"] 
+df["renda_x_idade"] = df["renda_per_capita_log"] * df["idade_c"] 
+df["atividade_x_idade"] = df["atividade_ativo"] * df["idade_c"] 
+df["tabagismo_x_idade"] = df["tabagismo_status"] * df["idade_c"] 
+df["alcool_x_idade"] = df["alcool_ativo"] * df["idade_c"] 
+df["imc_x_idade"] = df["imc"] * df["idade_c"]  
+df["plano_x_idade"] = df["plano_saude"] * df["idade_c"]  
+df["situacao_x_idade"] = df["situacao_domicilio"] * df["idade_c"]  
+df["sexo_x_idade"] = df["sexo_feminino"] * df["idade_c"] 
+df["renda_x_imc"] = df["renda_per_capita_log"] * df["imc"]
+df["indice_socioeconomico_x_idade"] = df["indice_socioeconomico"] * df["idade_c"]
+
+features_base_bio = [
+    "atividade_ativo",
+    "tabagismo_ativo",
+    "alcool_ativo",
+    "imc",
+    "sexo_feminino",
+    "idade_c",
+]
+
+features_x_idade_bio = [
+    "atividade_x_idade",
+    "tabagismo_x_idade",
+    "alcool_x_idade",
+    "sexo_x_idade",
+    "imc_x_idade",
+]
+
+features_base_dss_bio = [
+    "escolaridade_ord",
+    "renda_per_capita_log",
+    "atividade_ativo",
+    "tabagismo_ativo",
+    "alcool_ativo",
+    "sexo_feminino",
+    "plano_saude",
+    "situacao_domicilio",
+    "idade_c",
+    "imc"
+]
+
+features_x_idade_dss_bio = [
+    "esc_x_idade",
+    "renda_x_idade",
+    "atividade_x_idade",
+    "tabagismo_x_idade",
+    "alcool_x_idade",
+    "plano_x_idade",
+    "situacao_x_idade",
+    "sexo_x_idade",
+]
+
+
+
+features_base_dss = [
+    "escolaridade_ord",
+    "renda_per_capita_log",
+    "sexo_feminino",
+    "plano_saude",
+    "situacao_domicilio",
+    "idade_c",
+    "imc",
+    "indice_socioeconomico"
+]
+
+features_x_idade_dss = [
+    "esc_x_idade",
+    "renda_x_idade",
+    "plano_x_idade",
+    "situacao_x_idade",
+    "sexo_x_idade",
+    "indice_socioeconomico_x_idade"
+]
+
+
+
+features_final_bio = features_base_bio + features_x_idade_bio
+features_final_dss_bio = features_base_dss_bio + features_x_idade_dss_bio
+features_final_dss = features_base_dss + features_x_idade_dss
+## Criar matriz X
+# Modelo 1: DSS
+X_bio = df[features_final_bio]
+X_dss_bio = df[features_final_dss_bio]
+X_dss = df[features_final_dss]
+ 
+## Definir variavel alvo
+y = df["hipertensao"]
+# Modelo 1
+X_bio_train, X_bio_test, y_bio_train, y_bio_test = train_test_split(
+    X_bio, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+smote = SMOTE(random_state=42)
+X_bio_resampled, y_bio_resampled = smote.fit_resample(X_bio_train, y_bio_train)
+ 
+
+X_dss_bio_train, X_dss_bio_test, y_dss_bio_train, y_dss_bio_test = train_test_split(
+    X_dss_bio, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+X_dss_train, X_dss_test, y_dss_train, y_dss_test = train_test_split(
+    X_dss, y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+smote = SMOTE(random_state=42)
+X_bio_resampled, y_bio_resampled = smote.fit_resample(X_bio_train, y_bio_train)
+X_dss_bio_resampled, y_dss_bio_resampled = smote.fit_resample(X_dss_bio_train, y_dss_bio_train)
+X_dss_resampled, y_dss_resampled = smote.fit_resample(X_dss_train, y_dss_train)
+ 
+## Padronização
+Lasso necessita de escala padronizada
+scaler = StandardScaler()
+
+# Modelo 1
+X_bio_train_scaled = scaler.fit_transform(X_bio_resampled)
+X_bio_test_scaled = scaler.transform(X_bio_test)
+
+# Modelo 2: DSS + BIO
+X_dss_bio_train_scaled = scaler.fit_transform(X_dss_bio_resampled)
+X_dss_bio_test_scaled = scaler.transform(X_dss_bio_test)
+
+# MODELO 3: DSS
+X_dss_train_scaled = scaler.fit_transform(X_dss_resampled)
+X_dss_test_scaled = scaler.transform(X_dss_test)
+
+## Treinar Modelo LASSO L1
+usar cross validation para escolher λ automaticamente
+
+
+modelo_bio = LogisticRegressionCV(
+
+    penalty="l1",
+    solver="saga",
+    cv=5,
+    scoring="roc_auc",
+    max_iter=5000,
+    n_jobs=-1,
+    random_state=42
+)
+
+modelo_dss_bio = LogisticRegressionCV(
+
+    penalty="l1",
+    solver="saga",
+    cv=5,
+    scoring="roc_auc",
+    max_iter=5000,
+    n_jobs=-1,
+    random_state=42
+    
+)
+
+modelo_dss = LogisticRegressionCV(
+
+    penalty="l1",
+    solver="saga",
+    cv=5,
+    scoring="roc_auc",
+    max_iter=5000,
+    n_jobs=-1,
+    random_state=42
+    
+)
+
+modelo_bio.fit(X_bio_train_scaled, y_bio_resampled)
+modelo_dss.fit(X_dss_train_scaled, y_dss_resampled)
+modelo_dss_bio.fit(X_dss_bio_train_scaled, y_dss_bio_resampled)
+
+
+
+
+y_bio_prob = modelo_bio.predict_proba(X_bio_test_scaled)[:, 1]
+
+precisions_bio, recalls_bio, thresholds_bio = precision_recall_curve(y_bio_test, y_bio_prob)
+f1_bio_scores = 2 * (precisions_bio * recalls_bio) / (precisions_bio + recalls_bio + 1e-8)
+
+best_idx_bio = f1_bio_scores[:-1].argmax()
+best_threshold_bio = thresholds_bio[best_idx_bio]
+print(f"Melhor threshold pelo F1: {best_threshold_bio:.2f}")
+print(classification_report(y_bio_test, (y_bio_prob >= best_threshold_bio).astype(int)))
+
+plt.figure(figsize=(8,5))
+plt.plot(thresholds_bio, precisions_bio[:-1], label='Precisão')
+plt.plot(thresholds_bio, recalls_bio[:-1], label='Recall')
+plt.plot(thresholds_bio, f1_bio_scores[:-1], label='F1-score')
+plt.axvline(best_threshold_bio, color='red', linestyle='--', label=f'Melhor threshold (F1={f1_bio_scores[best_idx_bio]:.2f})')
+plt.xlabel('Threshold')
+plt.ylabel('Score')
+plt.title('Precision, Recall e F1-score por Threshold')
+plt.legend()
+plt.show()
+
+y_prob_dss = modelo_dss.predict_proba(X_dss_test_scaled)[:, 1]
+
+precisions_dss, recalls_dss, thresholds_dss = precision_recall_curve(y_dss_test, y_prob_dss)
+f1_dss_scores = 2 * (precisions_dss * recalls_dss) / (precisions_dss + recalls_dss + 1e-8)
+
+best_idx_dss = f1_dss_scores[:-1].argmax()
+best_threshold_dss = thresholds_dss[best_idx_dss]
+print(f"Melhor threshold pelo F1: {best_threshold_dss:.2f}")
+print(classification_report(y_dss_test, (y_prob_dss >= best_threshold_dss).astype(int)))
+
+plt.figure(figsize=(8,5))
+plt.plot(thresholds_dss, precisions_dss[:-1], label='Precisão')
+plt.plot(thresholds_dss, recalls_dss[:-1], label='Recall')
+plt.plot(thresholds_dss, f1_dss_scores[:-1], label='F1-score')
+plt.axvline(best_threshold_dss, color='red', linestyle='--', label=f'Melhor threshold (F1={f1_dss_scores[best_idx_dss]:.2f})')
+plt.xlabel('Threshold')
+plt.ylabel('Score')
+plt.title('Precision, Recall e F1-score por Threshold')
+plt.legend()
+plt.show()
+# Modelo DSS + BIO
+
+y_prob_dss_bio = modelo_dss_bio.predict_proba(X_dss_bio_test_scaled)[:, 1]
+
+precisions_dss_bio, recalls_dss_bio, thresholds_dss_bio = precision_recall_curve(y_dss_bio_test, y_prob_dss_bio)
+f1_dss_bio_scores = 2 * (precisions_dss_bio * recalls_dss_bio) / (precisions_dss_bio + recalls_dss_bio + 1e-8)
+
+best_idx_dss_bio = f1_dss_bio_scores[:-1].argmax()
+best_threshold_dss_bio = thresholds_dss_bio[best_idx_dss_bio]
+print(f"Melhor threshold pelo F1: {best_threshold_dss_bio:.2f}")
+print(classification_report(y_dss_bio_test, (y_prob_dss_bio >= best_threshold_dss_bio).astype(int)))
+
+plt.figure(figsize=(8,5))
+plt.plot(thresholds_dss_bio, precisions_dss_bio[:-1], label='Precisão')
+plt.plot(thresholds_dss_bio, recalls_dss_bio[:-1], label='Recall')
+plt.plot(thresholds_dss_bio, f1_dss_bio_scores[:-1], label='F1-score')
+plt.axvline(best_threshold_dss_bio, color='red', linestyle='--', label=f'Melhor threshold (F1={f1_dss_bio_scores[best_idx_dss_bio]:.2f})')
+plt.xlabel('Threshold')
+plt.ylabel('Score')
+plt.title('Precision, Recall e F1-score por Threshold')
+plt.legend()
+plt.show()
+# Usar o melhor threshold encontrado para predições e métricas finais
+# y_proba já foi calculado anteriormente
+
+y_pred_otimo = (y_bio_prob >= best_threshold_bio).astype(int)
+
+print("Relatório de classificação com threshold ótimo para BIO:")
+print(classification_report(y_bio_test, y_pred_otimo))
+print("Matriz de confusão:")
+print(confusion_matrix(y_bio_test, y_pred_otimo))
+# Usar o melhor threshold encontrado para predições e métricas finais
+# y_proba já foi calculado anteriormente
+
+y_dss_otimo = (y_prob_dss >= best_threshold_dss).astype(int)
+
+print("Relatório de classificação com threshold ótimo para DSS:")
+print(classification_report(y_dss_test, y_dss_otimo))
+print("Matriz de confusão:")
+print(confusion_matrix(y_dss_test, y_dss_otimo))
+# Usar o melhor threshold encontrado para predições e métricas finais
+# y_proba já foi calculado anteriormente
+
+y_dss_bio_otimo = (y_prob_dss_bio >= best_threshold_dss_bio).astype(int)
+
+print("Relatório de classificação com threshold ótimo para DSS + BIO:")
+print(classification_report(y_dss_bio_test, y_dss_bio_otimo))
+print("Matriz de confusão:")
+print(confusion_matrix(y_dss_bio_test, y_dss_bio_otimo))
+## Avaliação 
+### Predição
+y_bio_pred = modelo_bio.predict(X_bio_test_scaled)
+y_prob = modelo_bio.predict_proba(X_bio_test_scaled)[:,1]
+y_dss_pred = modelo_dss.predict(X_dss_test_scaled)
+y_dss_prob = modelo_dss.predict_proba(X_dss_test_scaled)[:,1]
+y_dss_bio_pred = modelo_dss_bio.predict(X_dss_bio_test_scaled)
+y_dss_bio_prob = modelo_dss_bio.predict_proba(X_dss_bio_test_scaled)[:,1]
+### Métricas
+print("MODELO BIOMEDICO")
+print("AUC:", roc_auc_score(y_bio_test, y_bio_prob))
+print("Accuracy:", accuracy_score(y_bio_test, y_bio_pred))
+print(classification_report(y_bio_test, y_bio_pred))
+print("MODELO DSS")
+print("AUC:", roc_auc_score(y_dss_test, y_dss_prob))
+print("Accuracy:", accuracy_score(y_dss_test, y_dss_pred))
+print(classification_report(y_dss_test, y_dss_pred))
+print("MODELO DSS + BIO")
+print("AUC:", roc_auc_score(y_dss_bio_test, y_dss_bio_prob))
+print("Accuracy:", accuracy_score(y_dss_bio_test, y_dss_bio_pred))
+print(classification_report(y_dss_bio_test, y_dss_bio_pred))
+## Matriz de Confusão
+print("Matriz de confusão - Modelo Biomédico:")
+confusion_matrix(y_bio_test, y_bio_pred)
+
+
+print("Matriz de confusão - Modelo DSS:")
+confusion_matrix(y_dss_test, y_dss_pred)
+
+
+print("Matriz de confusão - Modelo DSS + BIO:")
+print(confusion_matrix(y_dss_bio_test, y_dss_bio_otimo))
+
+
+## Extrair coeficientes
+coef_bio = pd.Series(
+    modelo_bio.coef_[0],
+    index=features_final_bio
+)
+
+coef_dss = pd.Series(
+    modelo_dss.coef_[0],
+    index=features_final_dss
+)
+ 
+coef_dss_bio = pd.Series(
+    modelo_dss_bio.coef_[0],
+    index=features_final_dss_bio
+)
+
+## Variaveis selecionadas pelo LASSO
+print("Coeficientes do Modelo Biomédico:")
+coef_selecionados_bio = coef_bio[coef_bio != 0]
+
+coef_selecionados_bio.sort_values()
+
+print("Coeficientes do Modelo DSS:")
+coef_selecionados_dss = coef_dss[coef_dss != 0]
+
+coef_selecionados_dss.sort_values()
+
+print("Coeficientes do Modelo DSS + BIO:")
+coef_selecionados_dss_bio = coef_dss_bio[coef_dss_bio != 0]
+
+coef_selecionados_dss_bio.sort_values()
+
+## Calcular ODDS Ratio
+Odds Ratio = exp(coeficiente)
+print("Odds Ratios do Modelo Biomédico:")
+odds_ratio_bio = np.exp(coef_bio)
+
+odds_ratio_bio.sort_values()
+print("Odds Ratios do Modelo DSS:")
+odds_ratio_dss = np.exp(coef_dss)
+
+odds_ratio_dss.sort_values()
+print("Odds Ratios do Modelo Biomédico + DSS:")
+odds_ratio_dss_bio = np.exp(coef_dss_bio)
+
+odds_ratio_dss_bio.sort_values()
+## Tabelas Finais
+resultado_bio = pd.DataFrame({
+
+    "coeficiente": coef_selecionados_bio,
+    "odds_ratio": np.exp(coef_selecionados_bio)
+
+}).sort_values("odds_ratio")
+
+print("Resultado do Modelo Biomédico:")
+resultado_bio
+
+resultado_dss = pd.DataFrame({
+
+    "coeficiente": coef_selecionados_dss,
+    "odds_ratio": np.exp(coef_selecionados_dss)
+
+}).sort_values("odds_ratio")
+
+print("Resultado do Modelo DSS:")
+resultado_dss
+
+resultado_dss_bio = pd.DataFrame({
+
+    "coeficiente": coef_selecionados_dss_bio,
+    "odds_ratio": np.exp(coef_selecionados_dss_bio)
+
+}).sort_values("odds_ratio")
+
+print("Resultado do Modelo DSS + BIO:")
+resultado_dss_bio
+# 12. Interpretação dos resultados
+
+- **DSS melhoram predição?**
+  - Compare as métricas AUC, recall e acurácia entre os modelos. Se o modelo DSS+BIO ou DSS puro tiverem AUC/recall superiores ao biomédico, DSS contribuem para a predição.
+
+- **DSS ajudam a identificar risco?**
+  - Se o recall (sensibilidade) dos modelos com DSS for maior, eles identificam mais casos positivos (maior detecção de risco).
+
+- **DSS capturam desigualdade?**
+  - Analise os coeficientes das variáveis DSS (ex: escolaridade, renda, plano de saúde). Se coeficientes forem relevantes e diferentes de zero, DSS estão capturando desigualdades sociais na predição de hipertensão.
+
+> Interprete os resultados à luz do contexto de saúde pública, destacando como variáveis sociais podem complementar as informações biomédicas para identificar grupos de risco e desigualdades.
+# 10. Validação cruzada (k-fold)
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import recall_score
+
+cv_results = {}
+for nome, X, y, modelo in [
+    ("Biomédico", X_bio, y, modelo_bio),
+    ("DSS", X_dss, y, modelo_dss),
+    ("DSS+BIO", X_dss_bio, y, modelo_dss_bio)
+]:
+    scores = cross_val_score(modelo, X, y, cv=5, scoring='roc_auc', n_jobs=-1)
+    cv_results[nome] = scores
+    print(f"{nome}: Média AUC = {scores.mean():.3f} | Desvio padrão = {scores.std():.3f}")
+
+# 4b. Análise detalhada das matrizes de confusão
+from sklearn.metrics import confusion_matrix
+import pandas as pd
+
+def confusion_details(y_true, y_pred, nome):
+    cm = confusion_matrix(y_true, y_pred)
+    tn, fp, fn, tp = cm.ravel()
+    print(f"\nMatriz de confusão - {nome}")
+    print(pd.DataFrame(cm, columns=["Predito 0", "Predito 1"], index=["Real 0", "Real 1"]))
+    print(f"Falsos Positivos: {fp}")
+    print(f"Falsos Negativos: {fn}")
+    return fp, fn
+
+fp_bio, fn_bio = confusion_details(y_bio_test, y_bio_pred, "Biomédico")
+fp_dss, fn_dss = confusion_details(y_dss_test, y_dss_pred, "DSS")
+fp_dss_bio, fn_dss_bio = confusion_details(y_dss_bio_test, y_dss_bio_pred, "DSS+BIO")
+
+# Tabela comparativa
+resultados = pd.DataFrame({
+    'Modelo': ['Biomédico', 'DSS', 'DSS+BIO'],
+    'AUC (test)': [roc_auc_score(y_bio_test, y_bio_prob), roc_auc_score(y_dss_test, y_dss_prob), roc_auc_score(y_dss_bio_test, y_dss_bio_prob)],
+    'AUC (CV média)': [cv_results['Biomédico'].mean(), cv_results['DSS'].mean(), cv_results['DSS+BIO'].mean()],
+    'AUC (CV std)': [cv_results['Biomédico'].std(), cv_results['DSS'].std(), cv_results['DSS+BIO'].std()],
+    'Accuracy': [accuracy_score(y_bio_test, y_bio_pred), accuracy_score(y_dss_test, y_dss_pred), accuracy_score(y_dss_bio_test, y_dss_bio_pred)],
+    'Recall': [recall_score(y_bio_test, y_bio_pred), recall_score(y_dss_test, y_dss_pred), recall_score(y_dss_bio_test, y_dss_bio_pred)],
+    'Falsos Positivos': [fp_bio, fp_dss, fp_dss_bio],
+    'Falsos Negativos': [fn_bio, fn_dss, fn_dss_bio]
+})
+print("\nTabela comparativa dos modelos:")
+display(resultados)
+
+# Gráfico ROC
+from sklearn.metrics import RocCurveDisplay
+plt.figure(figsize=(8,6))
+RocCurveDisplay.from_predictions(y_bio_test, y_bio_prob, name='Biomédico')
+RocCurveDisplay.from_predictions(y_dss_test, y_dss_prob, name='DSS')
+RocCurveDisplay.from_predictions(y_dss_bio_test, y_dss_bio_prob, name='DSS+BIO')
+plt.title('Curvas ROC dos Modelos')
+plt.show()
+
+# Gráfico de importância das variáveis (coeficientes absolutos)
+def plot_importancia(coef, nome):
+    coef_abs = coef.abs().sort_values(ascending=False)
+    plt.figure(figsize=(8,4))
+    sns.barplot(x=coef_abs.values[:10], y=coef_abs.index[:10])
+    plt.title(f'10 variáveis mais importantes - {nome}')
+    plt.xlabel('Importância (|coef|)')
+    plt.show()
+
+plot_importancia(coef_bio, 'Biomédico')
+plot_importancia(coef_dss, 'DSS')
+plot_importancia(coef_dss_bio, 'DSS+BIO')
+# 10. Validação cruzada (k-fold)
+from sklearn.model_selection import cross_val_score
+
+cv_results = {}
+for nome, X, y, modelo in [
+    ("Biomédico", X_bio, y, modelo_bio),
+    ("DSS", X_dss, y, modelo_dss),
+    ("DSS+BIO", X_dss_bio, y, modelo_dss_bio)
+]:
+    scores = cross_val_score(modelo, X, y, cv=5, scoring='roc_auc', n_jobs=-1)
+    cv_results[nome] = scores
+    print(f"{nome}: Média AUC = {scores.mean():.3f} | Desvio padrão = {scores.std():.3f}")
+# 4b. Análise detalhada das matrizes de confusão
+from sklearn.metrics import confusion_matrix
+import pandas as pd
+
+def confusion_details(y_true, y_pred, nome):
+    cm = confusion_matrix(y_true, y_pred)
+    tn, fp, fn, tp = cm.ravel()
+    print(f"\nMatriz de confusão - {nome}")
+    print(pd.DataFrame(cm, columns=["Predito 0", "Predito 1"], index=["Real 0", "Real 1"]))
+    print(f"Falsos Positivos: {fp}")
+    print(f"Falsos Negativos: {fn}")
+    return fp, fn
+
+fp_bio, fn_bio = confusion_details(y_bio_test, y_bio_pred, "Biomédico")
+fp_dss, fn_dss = confusion_details(y_dss_test, y_dss_pred, "DSS")
+fp_dss_bio, fn_dss_bio = confusion_details(y_dss_bio_test, y_dss_bio_pred, "DSS+BIO")
+# 4. Teste de significância da AUC (bootstrap)
+from sklearn.utils import resample
+
+def bootstrap_auc(y_true, y_score, n_bootstraps=1000, random_state=42):
+    np.random.seed(random_state)
+    bootstrapped_scores = []
+    for i in range(n_bootstraps):
+        indices = resample(np.arange(len(y_true)), replace=True)
+        if len(np.unique(y_true[indices])) < 2:
+            continue
+        score = roc_auc_score(y_true[indices], y_score[indices])
+        bootstrapped_scores.append(score)
+    return np.percentile(bootstrapped_scores, [2.5, 97.5]), np.mean(bootstrapped_scores)
+
+# Calcular intervalos de confiança para cada modelo
+aucs = {}
+for nome, y_true, y_score in [
+    ("Biomédico", y_bio_test.values, y_bio_prob),
+    ("DSS", y_dss_test.values, y_dss_prob),
+    ("DSS+BIO", y_dss_bio_test.values, y_dss_bio_prob)
+]:
+    ci, mean_auc = bootstrap_auc(y_true, y_score)
+    aucs[nome] = (mean_auc, ci)
+    print(f"AUC {nome}: {mean_auc:.3f} (IC 95%: {ci[0]:.3f} - {ci[1]:.3f})")
+# Validação, comparação e interpretação dos modelos
+
+Nesta seção, avaliamos a significância estatística das diferenças entre os modelos, analisamos as matrizes de confusão, realizamos validação cruzada e organizamos os resultados em tabelas e gráficos, além de discutir a interpretação dos achados.
