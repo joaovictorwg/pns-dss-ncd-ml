@@ -1,5 +1,18 @@
+# Projeto: artefatos e temporarios
 VALIDATION_CHECKLIST.py
-MIGRATION_GUIDE.py
+src/MIGRATION_GUIDE.py
+ANALISE_EXPLORATORIA*.pdf
+notebooks/analise_exploratoria*.pdf
+LASSO*.pdf
+notebooks/lasso*.pdf
+notebooks/lasso_hipertensao.html
+notebooks/lasso_geral.ipy
+notebooks/lasso_geral.ipynb
+tmp_*
+tmp/**
+*.tmp
+data/raw/pns2019/pns2019.csv
+# Ambiente local e notebooks
 *.zip
 tcc_venv
 .ipynb_checkpoints
@@ -7,8 +20,9 @@ tcc_venv
 
 # Arquivos de dados grandes
 data/raw/*.csv
+data/raw/pns2019/*.csv
 data/raw/*.txt
-
+data\raw\pns2019\pns2019.csv
 # IPython
 profile_default/
 ipython_config.py
@@ -186,5 +200,3 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks
-
-REFATORACAO_RESUMO.txt

@@ -1,0 +1,3863 @@
+analise_exploratoria
+April 22, 2026
+
+1
+
+Análise Exploratória - PNS 2019
+
+Análise exploratória dos dados da Pesquisa Nacional de Saúde (PNS) 2019.
+Objetivo: explorar relações entre determinantes sociais e doenças crônicas.
+[94]: import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+import sys
+import geopandas as gpd
+from pathlib import Path
+# configuracoes
+warnings.filterwarnings('ignore')
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', 100)
+sns.set_palette('Set2')
+plt.style.use('seaborn-v0_8-whitegrid')
+malha_territorial = gpd.read_file("../ibge-official-files/BR_UF_2024.shp")
+# importar modulos locais
+sys.path.insert(0, str(Path.cwd().parent / 'src'))
+from selection import select_features
+from preprocessing import clean_pns_data
+from feature_engineering import apply_feature_engineering
+from transformation import apply_transformations
+[95]: print("=" * 70)
+print("RASTREAMENTO DE IDADE THROUGH PIPELINE")
+print("=" * 70)
+# Etapa 1: Selection
+df_sel = select_features()
+n_sel_idade = df_sel['idade'].notna().sum()
+
+1
+
+print(f"\n1. SELECTION: idade non-null = {n_sel_idade:,}")
+# Etapa 2: Preprocessing
+df_pre = clean_pns_data(df_sel)
+n_pre_idade = df_pre['idade'].notna().sum()
+print(f"2. PREPROCESSING: idade non-null = {n_pre_idade:,} (removidas:␣
+↪{n_sel_idade - n_pre_idade:,})")
+# Etapa 3: Feature Engineering
+df_eng = apply_feature_engineering(df_pre)
+n_eng_idade = df_eng['idade'].notna().sum() if 'idade' in df_eng.columns else␣
+↪"COLUNA NAO EXISTE"
+print(f"3. FEATURE ENGINEERING: idade non-null = {n_eng_idade} (removidas:␣
+↪{n_pre_idade - n_eng_idade if n_eng_idade != 'COLUNA NAO EXISTE' else␣
+↪'NA'})")
+# Etapa 4: Transformation
+df_tra = apply_transformations(df_eng)
+n_tra_idade_c = df_tra['idade_c'].notna().sum() if 'idade_c' in df_tra.columns␣
+↪else "COLUNA NAO EXISTE"
+n_tra_idade_c2 = df_tra['idade_c2'].notna().sum() if 'idade_c2' in df_tra.
+↪columns else "COLUNA NAO EXISTE"
+print(f"4. TRANSFORMATION: idade_c non-null = {n_tra_idade_c}")
+print(f"
+idade_c2 non-null = {n_tra_idade_c2}")
+print(f"
+registros totais = {len(df_tra):,}")
+print("\n" + "=" * 70)
+======================================================================
+RASTREAMENTO DE IDADE THROUGH PIPELINE
+======================================================================
+Features selecionadas salvas em:
+d:\Workspace\TCCII\data\processed\pns_2019_selected.csv
+Shape: (293726, 37)
+1. SELECTION: idade non-null = 279,382
+Após filtro de público-alvo (com resposta): 89954 registros
+Limpeza completa: 87657 registros, 39 features
+2. PREPROCESSING: idade non-null = 87,657 (removidas: 191,725)
+Iniciando engenharia de features: 87657 registros
+Engenharia completa: 87657 registros, 77 features
+3. FEATURE ENGINEERING: idade non-null = 87657 (removidas: 0)
+Aplicando transformações estatísticas: 87657 registros
+Transformações completas: 87657 registros, 78 features
+4. TRANSFORMATION: idade_c non-null = 87657
+idade_c2 non-null = 87657
+registros totais = 87,657
+
+2
+
+======================================================================
+[96]: # DIAGNOSTICO: por que faixa_etaria tem tantos NaN?
+print("=" * 70)
+print("DIAGNOSTICO: FAIXA_ETARIA NaN")
+print("=" * 70)
+# Verificar idade_c2
+print(f"\n1. IDADE_C2:")
+print(f"
+Non-null: {df_tra['idade_c2'].notna().sum():,}")
+print(f"
+NaN: {df_tra['idade_c2'].isna().sum():,}")
+print(f"
+Min: {df_tra['idade_c2'].min():.2f}")
+print(f"
+Max: {df_tra['idade_c2'].max():.2f}")
+print(f"
+Mean: {df_tra['idade_c2'].mean():.2f}")
+print(f"
+Std: {df_tra['idade_c2'].std():.2f}")
+# Bins usados no pd.cut
+bins = [18, 30, 40, 50, 60, 120]
+print(f"\n2. BINS ESPECIFICADOS: {bins}")
+# Contar valores fora dos bins
+fora_bins = (df_tra['idade_c2'] < bins[0]) | (df_tra['idade_c2'] > bins[-1])
+print(f"
+Valores FORA dos bins (< 18 ou > 120): {fora_bins.sum():,}")
+if (df_tra['idade_c2'] < bins[0]).sum() > 0:
+print(f"
+- Menores que 18: {(df_tra['idade_c2'] < bins[0]).sum():,}")
+print(f"
+Min valor < 18: {df_tra[df_tra['idade_c2'] < 18]['idade_c2'].
+↪min():.2f}")
+if (df_tra['idade_c2'] > bins[-1]).sum() > 0:
+print(f"
+- Maiores que 120: {(df_tra['idade_c2'] > bins[-1]).sum():,}")
+print(f"
+Max valor > 120: {df_tra[df_tra['idade_c2'] > 120]['idade_c2'].
+↪max():.2f}")
+# Criar faixa_etaria e verificar
+df_tra['faixa_etaria_diag'] = pd.cut(df_tra['idade_c2'],
+bins=bins,
+labels=['18-29', '30-39', '40-49',␣
+↪'50-59', '60+'])
+n_nan_faixa = df_tra['faixa_etaria_diag'].isna().sum()
+n_valid_faixa = df_tra['faixa_etaria_diag'].notna().sum()
+print(f"\n3. RESULTADO pd.cut():")
+print(f"
+Non-null faixa_etaria: {n_valid_faixa:,}")
+print(f"
+NaN faixa_etaria: {n_nan_faixa:,}")
+
+3
+
+print(f"
+
+% NaN: {(n_nan_faixa / len(df_tra) * 100):.1f}%")
+
+if n_nan_faixa == fora_bins.sum():
+print(f"\n
+CONCLUSAO: Todos os NaN em faixa_etaria sao por valores FORA␣
+↪dos bins!")
+print(f"
+SOLUCAO: Usar right=False ou expandir bins para incluir idade_c2␣
+↪centrada")
+else:
+print(f"\n
+Há {n_nan_faixa - fora_bins.sum():,} NaN adicionais (além dos␣
+↪fora dos bins)")
+# Distribuicao de faixa_etaria
+print(f"\n4. DISTRIBUICAO DE FAIXA_ETARIA:")
+print(df_tra['faixa_etaria_diag'].value_counts(dropna=False).sort_index())
+print("\n" + "=" * 70)
+======================================================================
+DIAGNOSTICO: FAIXA_ETARIA NaN
+======================================================================
+1. IDADE_C2:
+Non-null: 87,657
+NaN: 0
+Min: 0.13
+Max: 3556.49
+Mean: 292.24
+Std: 332.49
+2. BINS ESPECIFICADOS: [18, 30, 40, 50, 60, 120]
+Valores FORA dos bins (< 18 ou > 120): 63,969
+- Menores que 18: 12,667
+Min valor < 18: 0.13
+- Maiores que 120: 51,302
+Max valor > 120: 3556.49
+3. RESULTADO pd.cut():
+Non-null faixa_etaria: 23,688
+NaN faixa_etaria: 63,969
+% NaN: 73.0%
+CONCLUSAO: Todos os NaN em faixa_etaria sao por valores FORA dos bins!
+SOLUCAO: Usar right=False ou expandir bins para incluir idade_c2 centrada
+4. DISTRIBUICAO DE FAIXA_ETARIA:
+faixa_etaria_diag
+18-29
+5075
+
+4
+
+30-39
+1589
+40-49
+3308
+50-59
+3481
+10235
+60+
+NaN
+63969
+Name: count, dtype: int64
+======================================================================
+[97]: # reiniciar o kernel para recarregar os modulos atualizados
+import importlib
+import sys
+# remover modulos em cache
+mods_to_remove = [m for m in sys.modules if 'src.' in m or m in ['selection',␣
+↪'preprocessing', 'feature_engineering', 'transformation']]
+for m in mods_to_remove:
+del sys.modules[m]
+print(f"Removidos {len(mods_to_remove)} modulos em cache")
+print("Recarregando modulos...")
+Removidos 4 modulos em cache
+Recarregando modulos…
+
+1.1
+
+1. Carregar dados selecionados
+
+Carregar os dados já selecionados (features de interesse)
+[98]: # selecionar features do dataset bruto
+df_selected = select_features()
+print(f"Dados carregados: {df_selected.shape[0]:,} registros x {df_selected.
+↪shape[1]} variaveis")
+print(f"\nColunas: {list(df_selected.columns)}")
+Features selecionadas salvas em:
+d:\Workspace\TCCII\data\processed\pns_2019_selected.csv
+Shape: (293726, 37)
+Dados carregados: 293,726 registros x 37 variaveis
+Colunas: ['uf', 'situacao_domicilio', 'tipo_domicilio', 'agua_canalizada',
+'acesso_internet', 'sexo', 'idade', 'raca', 'alfabetizado', 'escolaridade',
+'plano_saude', 'renda_domiciliar', 'renda_per_capita', 'peso', 'altura',
+'fumante_atual', 'fumou_passado', 'alcool_frequencia', 'alcool_dia_semana',
+'atividade_fisica', 'atividade_fisica_frequencia', 'hipertensao', 'diabetes',
+'doenca_coracao', 'infarto', 'angina', 'insuficiencia_cardiaca', 'arritmia',
+'avc', 'asma', 'artrite', 'dort', 'depressao', 'doenca_pulmao', 'enfisema',
+'bronquite', 'insuficiencia_renal']
+5
+
+Dados carregados: 293,726 registros x 37 variaveis
+Colunas: ['uf', 'situacao_domicilio', 'tipo_domicilio', 'agua_canalizada',
+'acesso_internet', 'sexo', 'idade', 'raca', 'alfabetizado', 'escolaridade',
+'plano_saude', 'renda_domiciliar', 'renda_per_capita', 'peso', 'altura',
+'fumante_atual', 'fumou_passado', 'alcool_frequencia', 'alcool_dia_semana',
+'atividade_fisica', 'atividade_fisica_frequencia', 'hipertensao', 'diabetes',
+'doenca_coracao', 'infarto', 'angina', 'insuficiencia_cardiaca', 'arritmia',
+'avc', 'asma', 'artrite', 'dort', 'depressao', 'doenca_pulmao', 'enfisema',
+'bronquite', 'insuficiencia_renal']
+
+1.2
+
+2. Visão geral dos dados selecionados
+
+Visão geral antes de qualquer processamento
+[99]: # info basica
+df_selected.info()
+<class 'pandas.DataFrame'>
+RangeIndex: 293726 entries, 0 to 293725
+Data columns (total 37 columns):
+#
+Column
+Non-Null Count
+--- ------------------0
+uf
+293726 non-null
+1
+situacao_domicilio
+293726 non-null
+2
+tipo_domicilio
+279382 non-null
+3
+agua_canalizada
+279382 non-null
+4
+acesso_internet
+279382 non-null
+5
+sexo
+279382 non-null
+6
+idade
+279382 non-null
+7
+raca
+279382 non-null
+8
+alfabetizado
+261595 non-null
+9
+escolaridade
+178013 non-null
+10 plano_saude
+279382 non-null
+11 renda_domiciliar
+279210 non-null
+12 renda_per_capita
+279210 non-null
+13 peso
+89954 non-null
+14 altura
+89954 non-null
+15 fumante_atual
+90846 non-null
+16 fumou_passado
+79460 non-null
+17 alcool_frequencia
+90846 non-null
+18 alcool_dia_semana
+24323 non-null
+19 atividade_fisica
+90846 non-null
+20 atividade_fisica_frequencia 36398 non-null
+21 hipertensao
+88736 non-null
+22 diabetes
+84073 non-null
+23 doenca_coracao
+90846 non-null
+24 infarto
+4732 non-null
+
+6
+
+Dtype
+----int64
+int64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+
+25 angina
+26 insuficiencia_cardiaca
+27 arritmia
+28 avc
+29 asma
+30 artrite
+31 dort
+32 depressao
+33 doenca_pulmao
+34 enfisema
+35 bronquite
+36 insuficiencia_renal
+dtypes: float64(35), int64(2)
+memory usage: 82.9 MB
+
+4732 non-null
+4732 non-null
+4732 non-null
+90846 non-null
+90846 non-null
+90846 non-null
+90846 non-null
+90846 non-null
+90846 non-null
+1279 non-null
+1279 non-null
+90846 non-null
+
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+
+[100]: # primeiras linhas
+df_selected.head(10)
+[100]:
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+
+uf
+11
+11
+11
+11
+11
+11
+11
+11
+11
+11
+
+situacao_domicilio
+1
+1
+1
+1
+1
+1
+1
+1
+1
+1
+
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+
+sexo
+2.0
+1.0
+1.0
+1.0
+2.0
+2.0
+2.0
+1.0
+2.0
+2.0
+
+0
+1
+2
+3
+
+renda_domiciliar
+2098.0
+2098.0
+2098.0
+2098.0
+
+idade
+55.0
+69.0
+31.0
+9.0
+6.0
+4.0
+33.0
+17.0
+15.0
+19.0
+
+raca
+1.0
+4.0
+2.0
+2.0
+4.0
+2.0
+1.0
+1.0
+4.0
+4.0
+
+tipo_domicilio
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+
+alfabetizado
+1.0
+1.0
+1.0
+1.0
+1.0
+NaN
+1.0
+1.0
+1.0
+1.0
+
+agua_canalizada
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+
+escolaridade
+5.0
+NaN
+10.0
+NaN
+NaN
+NaN
+7.0
+NaN
+NaN
+10.0
+
+renda_per_capita
+350.0
+350.0
+350.0
+350.0
+
+peso
+60.0
+NaN
+NaN
+NaN
+
+7
+
+acesso_internet
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+1.0
+
+plano_saude
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+
+altura
+145.0
+NaN
+NaN
+NaN
+
+\
+
+fumante_atual
+3.0
+NaN
+NaN
+NaN
+
+\
+
+\
+
+4
+5
+6
+7
+8
+9
+
+2098.0
+2098.0
+1000.0
+1000.0
+1000.0
+1000.0
+
+350.0
+350.0
+250.0
+250.0
+250.0
+250.0
+
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+
+fumou_passado
+1.0
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+
+alcool_frequencia
+2.0
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+2.0
+
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+
+atividade_fisica_frequencia
+1.0
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+
+infarto
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+
+0
+1
+2
+
+dort
+2.0
+NaN
+NaN
+
+angina
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+
+depressao
+1.0
+NaN
+NaN
+
+NaN
+NaN
+NaN
+NaN
+NaN
+65.0
+
+NaN
+NaN
+NaN
+NaN
+NaN
+152.0
+
+NaN
+NaN
+NaN
+NaN
+NaN
+1.0
+
+alcool_dia_semana
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+
+atividade_fisica
+1.0
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+2.0
+
+hipertensao
+1.0
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+2.0
+
+diabetes
+2.0
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+2.0
+
+doenca_coracao
+2.0
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+2.0
+
+insuficiencia_cardiaca
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+
+arritmia
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+
+avc
+2.0
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+2.0
+
+doenca_pulmao
+2.0
+NaN
+NaN
+
+bronquite
+NaN
+NaN
+NaN
+
+enfisema
+NaN
+NaN
+NaN
+
+8
+
+asma
+2.0
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+2.0
+
+\
+
+\
+
+artrite
+1.0
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+2.0
+
+\
+
+insuficiencia_renal
+2.0
+NaN
+NaN
+
+3
+4
+5
+6
+7
+8
+9
+
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+2.0
+
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+2.0
+
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+2.0
+
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+
+NaN
+NaN
+NaN
+NaN
+NaN
+NaN
+2.0
+
+[101]: # estatisticas descritivas
+df_selected.describe()
+[101]:
+count
+mean
+std
+min
+25%
+50%
+75%
+max
+
+uf
+293726.000000
+28.844716
+11.762108
+11.000000
+21.000000
+27.000000
+35.000000
+53.000000
+
+situacao_domicilio
+293726.000000
+1.236843
+0.425146
+1.000000
+1.000000
+1.000000
+1.000000
+2.000000
+
+count
+mean
+std
+min
+25%
+50%
+75%
+max
+
+acesso_internet
+279382.000000
+1.199780
+0.399836
+1.000000
+1.000000
+1.000000
+1.000000
+2.000000
+
+count
+mean
+std
+min
+25%
+50%
+75%
+max
+
+alfabetizado
+261595.000000
+1.105457
+0.307142
+1.000000
+1.000000
+1.000000
+1.000000
+2.000000
+
+count
+mean
+std
+min
+25%
+
+renda_per_capita
+279210.000000
+1314.001046
+2307.681908
+0.000000
+399.000000
+
+sexo
+279382.000000
+1.518788
+0.499648
+1.000000
+1.000000
+2.000000
+2.000000
+2.000000
+
+escolaridade
+178013.000000
+8.766028
+2.556453
+1.000000
+7.000000
+10.000000
+10.000000
+15.000000
+
+tipo_domicilio
+279382.000000
+1.103457
+0.312296
+1.000000
+1.000000
+1.000000
+1.000000
+3.000000
+
+idade
+279382.000000
+35.267651
+21.675970
+0.000000
+17.000000
+34.000000
+52.000000
+112.000000
+plano_saude
+279382.000000
+1.790262
+0.407122
+1.000000
+2.000000
+2.000000
+2.000000
+2.000000
+
+peso
+89954.000000
+71.876637
+15.160030
+25.000000
+61.000000
+
+altura
+89954.000000
+164.905841
+9.707327
+128.000000
+158.000000
+
+9
+
+agua_canalizada
+279382.000000
+1.113282
+0.438858
+1.000000
+1.000000
+1.000000
+1.000000
+3.000000
+
+raca
+279382.000000
+2.735856
+1.418659
+1.000000
+1.000000
+4.000000
+4.000000
+9.000000
+
+\
+
+renda_domiciliar
+279210.000000
+4095.075101
+6685.171169
+0.000000
+1371.000000
+2498.000000
+4500.000000
+644998.000000
+fumante_atual
+90846.000000
+2.762389
+0.636955
+1.000000
+3.000000
+
+\
+
+\
+
+\
+
+50%
+75%
+max
+
+760.000000
+1397.000000
+203196.000000
+
+70.000000
+80.000000
+176.000000
+
+alcool_frequencia
+90846.000000
+1.657585
+0.872154
+1.000000
+1.000000
+1.000000
+3.000000
+3.000000
+
+165.000000
+171.000000
+206.000000
+
+3.000000
+3.000000
+3.000000
+
+count
+mean
+std
+min
+25%
+50%
+75%
+max
+
+fumou_passado
+79460.000000
+2.427888
+0.882790
+1.000000
+1.000000
+3.000000
+3.000000
+3.000000
+
+count
+mean
+std
+min
+25%
+50%
+75%
+max
+
+atividade_fisica_frequencia
+36398.000000
+3.365377
+1.931954
+0.000000
+2.000000
+3.000000
+5.000000
+7.000000
+
+hipertensao
+88736.000000
+1.731214
+0.443331
+1.000000
+1.000000
+2.000000
+2.000000
+2.000000
+
+diabetes
+84073.000000
+1.912291
+0.282874
+1.000000
+2.000000
+2.000000
+2.000000
+2.000000
+
+count
+mean
+std
+min
+25%
+50%
+75%
+max
+
+doenca_coracao
+90846.000000
+1.947912
+0.222206
+1.000000
+2.000000
+2.000000
+2.000000
+2.000000
+
+angina
+4732.000000
+1.856932
+0.350180
+1.000000
+2.000000
+2.000000
+2.000000
+2.000000
+
+insuficiencia_cardiaca
+4732.000000
+1.782544
+0.412559
+1.000000
+2.000000
+2.000000
+2.000000
+2.000000
+
+count
+mean
+std
+min
+25%
+50%
+75%
+max
+
+arritmia
+4732.000000
+1.560862
+0.496334
+1.000000
+1.000000
+2.000000
+2.000000
+2.000000
+
+avc
+90846.000000
+1.978260
+0.145834
+1.000000
+2.000000
+2.000000
+2.000000
+2.000000
+
+count
+mean
+
+depressao
+90846.000000
+1.908284
+
+doenca_pulmao
+90846.000000
+1.985921
+
+infarto
+4732.000000
+1.707735
+0.454852
+1.000000
+1.000000
+2.000000
+2.000000
+2.000000
+
+alcool_dia_semana
+24323.000000
+1.861736
+1.691750
+0.000000
+1.000000
+1.000000
+2.000000
+7.000000
+
+asma
+90846.000000
+1.950829
+0.216226
+1.000000
+2.000000
+2.000000
+2.000000
+2.000000
+enfisema
+1279.000000
+1.711493
+
+10
+
+atividade_fisica
+90846.000000
+1.599344
+0.490034
+1.000000
+1.000000
+2.000000
+2.000000
+2.000000
+\
+
+\
+
+artrite
+90846.000000
+1.920591
+0.270378
+1.000000
+2.000000
+2.000000
+2.000000
+2.000000
+
+dort
+90846.000000
+1.981166
+0.135940
+1.000000
+2.000000
+2.000000
+2.000000
+2.000000
+
+bronquite
+1279.000000
+1.512119
+
+\
+
+\
+
+\
+
+std
+min
+25%
+50%
+75%
+max
+
+0.288626
+1.000000
+2.000000
+2.000000
+2.000000
+2.000000
+
+0.117816
+1.000000
+2.000000
+2.000000
+2.000000
+2.000000
+
+0.453245
+1.000000
+1.000000
+2.000000
+2.000000
+2.000000
+
+count
+mean
+std
+min
+25%
+50%
+75%
+max
+
+insuficiencia_renal
+90846.000000
+1.985833
+0.118179
+1.000000
+2.000000
+2.000000
+2.000000
+2.000000
+
+1.2.1
+
+Missing values nos dados selecionados
+
+0.500049
+1.000000
+1.000000
+2.000000
+2.000000
+2.000000
+
+[102]: # calcular missing
+missing_raw = pd.DataFrame({
+'n_missing': df_selected.isna().sum(),
+'pct_missing': (df_selected.isna().sum() / len(df_selected) * 100).round(2)
+}).sort_values('n_missing', ascending=False)
+# apenas variaveis com missing
+missing_raw[missing_raw['n_missing'] > 0]
+[102]:
+bronquite
+enfisema
+arritmia
+infarto
+angina
+insuficiencia_cardiaca
+alcool_dia_semana
+atividade_fisica_frequencia
+fumou_passado
+diabetes
+hipertensao
+altura
+peso
+avc
+doenca_coracao
+asma
+artrite
+depressao
+
+n_missing
+292447
+292447
+288994
+288994
+288994
+288994
+269403
+257328
+214266
+209653
+204990
+203772
+203772
+202880
+202880
+202880
+202880
+202880
+
+pct_missing
+99.56
+99.56
+98.39
+98.39
+98.39
+98.39
+91.72
+87.61
+72.95
+71.38
+69.79
+69.37
+69.37
+69.07
+69.07
+69.07
+69.07
+69.07
+
+11
+
+atividade_fisica
+fumante_atual
+alcool_frequencia
+doenca_pulmao
+dort
+insuficiencia_renal
+escolaridade
+alfabetizado
+renda_domiciliar
+renda_per_capita
+tipo_domicilio
+raca
+idade
+agua_canalizada
+acesso_internet
+sexo
+plano_saude
+
+202880
+202880
+202880
+202880
+202880
+202880
+115713
+32131
+14516
+14516
+14344
+14344
+14344
+14344
+14344
+14344
+14344
+
+69.07
+69.07
+69.07
+69.07
+69.07
+69.07
+39.39
+10.94
+4.94
+4.94
+4.88
+4.88
+4.88
+4.88
+4.88
+4.88
+4.88
+
+[103]: # visualizar top 20 missing
+top_missing = missing_raw[missing_raw['n_missing'] > 0].head(20)
+plt.figure(figsize=(12, 8))
+plt.barh(range(len(top_missing)), top_missing['pct_missing'], color='coral')
+plt.yticks(range(len(top_missing)), top_missing.index)
+plt.xlabel('Percentual Missing (%)')
+plt.title('Top 20 Variaveis com Missing Values')
+plt.tight_layout()
+plt.show()
+
+12
+
+Muitos missing nos dados selecionados. Isso acontece porque: - Tem perguntas condicionais (skip
+patterns) - As features selecionadas focam no módulo individual (morador selecionado) que contém
+menos respostas - Codigo 9 (ignorado/nao sabe)
+Filtrar pelo modulo individual (peso) e adultos (>=18 anos)
+[104]: # filtrar adultos e modulo individual
+df = df_selected[(df_selected['idade'] >= 18) & (df_selected['peso'].notna())].
+↪copy()
+print(f"Antes do filtro: {len(df_selected):,} registros")
+print(f"Depois do filtro: {len(df):,} registros")
+print(f"Removidos: {len(df_selected) - len(df):,} ({(1 - len(df)/
+↪len(df_selected))*100:.1f}%)")
+Antes do filtro: 293,726 registros
+Depois do filtro: 87,678 registros
+Removidos: 206,048 (70.1%)
+[105]: # recalcular missing apos filtro
+missing_filtrado = pd.DataFrame({
+'n_missing': df.isna().sum(),
+'pct_missing': (df.isna().sum() / len(df) * 100).round(2)
+}).sort_values('n_missing', ascending=False)
+
+13
+
+missing_filtrado[missing_filtrado['n_missing'] > 0].head(20)
+[105]:
+bronquite
+enfisema
+arritmia
+infarto
+angina
+insuficiencia_cardiaca
+alcool_dia_semana
+atividade_fisica_frequencia
+escolaridade
+fumou_passado
+diabetes
+hipertensao
+renda_per_capita
+renda_domiciliar
+
+n_missing
+86431
+86431
+82972
+82972
+82972
+82972
+63681
+52992
+11896
+11224
+6154
+1662
+21
+21
+
+pct_missing
+98.58
+98.58
+94.63
+94.63
+94.63
+94.63
+72.63
+60.44
+13.57
+12.80
+7.02
+1.90
+0.02
+0.02
+
+Agora os missing values se concentram nos casos de skip pattern e ignorados
+
+1.3
+
+3. Explorar variaveis de doencas
+
+prevalencias das doencas cronicas
+[106]: # lista de doencas
+doencas = [
+'hipertensao', 'diabetes', 'doenca_coracao', 'infarto',
+'angina', 'insuficiencia_cardiaca', 'arritmia',
+'avc', 'asma', 'artrite', 'dort', 'depressao',
+'doenca_pulmao', 'enfisema', 'bronquite', 'insuficiencia_renal'
+]
+# prevalencia robusta para codificacao bruta (1=Sim, 2=Nao, 9=Ignorado)
+prevalencias = {}
+for col in doencas:
+if col not in df.columns:
+continue
+s = pd.to_numeric(df[col], errors='coerce')
+if set(s.dropna().unique()).issubset({1, 2, 9}):
+s_bin = s.map({1: 1, 2: 0, 9: np.nan})
+elif set(s.dropna().unique()).issubset({0, 1}):
+s_bin = s
+else:
+s_bin = s.map({1: 1, 2: 0, 0: 0, 9: np.nan})
+
+14
+
+prevalencias[col] = s_bin.mean() * 100
+prevalencias = pd.Series(prevalencias).sort_values(ascending=False)
+prevalencias
+[106]: bronquite
+arritmia
+enfisema
+infarto
+hipertensao
+insuficiencia_cardiaca
+angina
+depressao
+diabetes
+artrite
+doenca_coracao
+asma
+avc
+dort
+insuficiencia_renal
+doenca_pulmao
+dtype: float64
+
+48.115477
+43.965151
+29.430634
+29.366766
+27.575102
+21.780705
+14.385890
+9.329592
+8.982631
+8.198180
+5.367367
+4.829034
+2.247998
+1.940053
+1.454185
+1.422250
+
+[107]: # visualizar prevalencias (mais legivel)
+prev_plot = prevalencias.sort_values(ascending=True)
+plt.figure(figsize=(11, 8))
+colors = sns.color_palette("Blues", n_colors=len(prev_plot))
+bars = plt.barh(prev_plot.index, prev_plot.values, color=colors)
+for bar, val in zip(bars, prev_plot.values):
+plt.text(val + 0.25, bar.get_y() + bar.get_height() / 2, f"{val:.1f}%",␣
+↪va="center", fontsize=9)
+plt.xlim(0, max(prev_plot.max() + 3, 10))
+plt.xlabel("Prevalencia (%)")
+plt.title("Prevalencia de Doencas Cronicas (PNS 2019)")
+plt.grid(axis="x", alpha=0.2)
+plt.tight_layout()
+plt.show()
+
+15
+
+A prevalencia esta coerente com a literatura brasileira e com a PNS, hipertensão é a DCNT com
+maior prevalencia, cerca de 27%
+
+1.4
+
+4. Explorar variaveis sociodemograficas
+
+[108]: # idade (visualizacao mais informativa)
+print("IDADE")
+print(df['idade'].describe().round(2))
+idade = pd.to_numeric(df['idade'], errors='coerce').dropna()
+p1, p99 = idade.quantile([0.01, 0.99])
+idade_central = idade[(idade >= p1) & (idade <= p99)]
+fig, axes = plt.subplots(1, 2, figsize=(13, 4.5))
+sns.histplot(idade_central, bins=35, kde=True, color='#5DA5DA', ax=axes[0])
+axes[0].axvline(idade.median(), color='firebrick', linestyle='--', linewidth=1.
+↪5, label=f"Mediana total: {idade.median():.1f}")
+axes[0].set_xlabel('Idade')
+axes[0].set_ylabel('Frequencia')
+
+16
+
+axes[0].set_title(f'Distribuicao de Idade (faixa central P1-P99: {p1:.0f}-{p99:.
+↪0f})')
+axes[0].legend()
+sns.boxplot(y=idade, ax=axes[1], color='#B8DE6F', showfliers=False)
+axes[1].set_ylabel('Idade')
+axes[1].set_title('Boxplot de Idade (sem outliers extremos)')
+plt.tight_layout()
+plt.show()
+IDADE
+count
+87678.00
+mean
+47.36
+std
+17.09
+min
+18.00
+25%
+34.00
+50%
+46.00
+75%
+60.00
+max
+107.00
+Name: idade, dtype: float64
+
+[109]: # sexo (troca de pizza por barras com rotulos)
+print("SEXO")
+sexo_dist = df['sexo'].value_counts(dropna=False).sort_index()
+print(sexo_dist)
+sexo_map = {1: 'Masculino', 2: 'Feminino'}
+sexo_plot = df['sexo'].map(sexo_map).fillna('Nao informado').value_counts()
+sexo_pct = (sexo_plot / sexo_plot.sum() * 100).round(1)
+plt.figure(figsize=(7, 5))
+
+17
+
+ax = sns.barplot(x=sexo_plot.index, y=sexo_plot.values, palette=['#6BAED6',␣
+↪'#FB9A99', '#BDBDBD'][:len(sexo_plot)])
+for i, (n, p) in enumerate(zip(sexo_plot.values, sexo_pct.values)):
+ax.text(i, n + max(sexo_plot.values) * 0.01, f"{n:,} ({p:.1f}%)",␣
+↪ha='center', fontsize=10)
+plt.ylabel('Numero de pessoas')
+plt.xlabel('Sexo')
+plt.title('Distribuicao por Sexo')
+plt.grid(axis='y', alpha=0.2)
+plt.tight_layout()
+plt.show()
+SEXO
+sexo
+1.0
+41662
+2.0
+46016
+Name: count, dtype: int64
+
+[110]: # renda
+print("RENDA PER CAPITA")
+
+18
+
+print(df['renda_per_capita'].describe())
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+axes[0].hist(df['renda_per_capita'].dropna(), bins=50, color='green', alpha=0.6)
+axes[0].set_xlabel('Renda Per Capita (R$)')
+axes[0].set_ylabel('Frequencia')
+axes[0].set_title('Distribuicao de Renda (escala linear)')
+axes[1].hist(np.log1p(df['renda_per_capita'].dropna()), bins=50,␣
+↪color='darkgreen', alpha=0.6)
+axes[1].set_xlabel('log(Renda Per Capita + 1)')
+axes[1].set_ylabel('Frequencia')
+axes[1].set_title('Distribuicao de Renda (escala log)')
+plt.tight_layout()
+plt.show()
+print(f"\nSkewness original: {df['renda_per_capita'].skew():.2f}")
+print(f"Skewness log: {np.log1p(df['renda_per_capita'].dropna()).skew():.2f}")
+RENDA PER CAPITA
+count
+87657.000000
+mean
+1618.312559
+std
+2841.669174
+min
+0.000000
+25%
+499.000000
+50%
+998.000000
+75%
+1675.000000
+max
+203196.000000
+Name: renda_per_capita, dtype: float64
+
+Skewness original: 13.53
+
+19
+
+Skewness log: -1.80
+
+1.5
+
+5. Relacoes entre variaveis
+
+explorar relações antes do pre proc
+[111]: # distribuicao bruta + mapeamento auxiliar (sem alterar dados originais)
+print("CODIGOS BRUTOS DE HIPERTENSAO")
+print(df['hipertensao'].value_counts(dropna=False).sort_index())
+if 'doencas' not in globals():
+doencas = [
+'hipertensao', 'diabetes', 'doenca_coracao', 'infarto',
+'angina', 'insuficiencia_cardiaca', 'arritmia',
+'avc', 'asma', 'artrite', 'dort', 'depressao',
+'doenca_pulmao', 'enfisema', 'bronquite', 'insuficiencia_renal'
+]
+def map_binario_pns_analise(series):
+s = pd.to_numeric(series, errors='coerce')
+valores = set(s.dropna().unique())
+if valores.issubset({1, 2, 9}):
+return s.map({1: 1, 2: 0, 9: np.nan})
+if valores.issubset({0, 1}):
+return s
+return s.map({1: 1, 2: 0, 0: 0, 9: np.nan})
+df_valid = df.copy()
+# Aplica o mapeamento para todos os desfechos disponiveis na analise␣
+↪pre-processamento
+for desfecho in doencas:
+if desfecho in df_valid.columns:
+df_valid[f"{desfecho}_bin"] =␣
+↪map_binario_pns_analise(df_valid[desfecho])
+df_valid[f"{desfecho}_cat"] = df_valid[f"{desfecho}_bin"].map({0:␣
+↪"Nao", 1: "Sim"})
+# Compatibilidade com as celulas ja existentes de hipertensao
+df_valid["hipertensao_bin"] = df_valid.get("hipertensao_bin",␣
+↪map_binario_pns_analise(df_valid["hipertensao"]))
+df_valid["hipertensao_cat"] = df_valid["hipertensao_bin"].map({0: "Nao␣
+↪Hipertenso", 1: "Hipertenso"})
+print("\nDISTRIBUICAO MAPEADA (ANALISE)")
+print(df_valid["hipertensao_cat"].value_counts(dropna=False))
+
+20
+
+# Resumo rapido para todos os desfechos mapeados
+resumo_desfechos = []
+for desfecho in doencas:
+col_bin = f"{desfecho}_bin"
+if col_bin in df_valid.columns:
+resumo_desfechos.append({
+"desfecho": desfecho,
+"n_validos": int(df_valid[col_bin].notna().sum()),
+"prevalencia_%": round(float(df_valid[col_bin].mean() * 100), 2),
+})
+display(pd.DataFrame(resumo_desfechos).sort_values("prevalencia_%",␣
+↪ascending=False))
+CODIGOS BRUTOS DE HIPERTENSAO
+hipertensao
+1.0
+23719
+2.0
+62297
+NaN
+1662
+Name: count, dtype: int64
+DISTRIBUICAO MAPEADA (ANALISE)
+hipertensao_cat
+Nao Hipertenso
+62297
+Hipertenso
+23719
+NaN
+1662
+Name: count, dtype: int64
+14
+6
+13
+3
+0
+5
+4
+11
+1
+9
+2
+8
+7
+10
+15
+12
+
+desfecho
+bronquite
+arritmia
+enfisema
+infarto
+hipertensao
+insuficiencia_cardiaca
+angina
+depressao
+diabetes
+artrite
+doenca_coracao
+asma
+avc
+dort
+insuficiencia_renal
+doenca_pulmao
+
+n_validos
+1247
+4706
+1247
+4706
+86016
+4706
+4706
+87678
+81524
+87678
+87678
+87678
+87678
+87678
+87678
+87678
+
+prevalencia_%
+48.12
+43.97
+29.43
+29.37
+27.58
+21.78
+14.39
+9.33
+8.98
+8.20
+5.37
+4.83
+2.25
+1.94
+1.45
+1.42
+
+21
+
+[112]: # idade x hipertensao
+print("IDADE POR STATUS DE HIPERTENSAO")
+idade = pd.to_numeric(df_valid["idade"], errors="coerce")
+h_bin = df_valid["hipertensao_bin"]
+idade_nao_hipertenso = idade[h_bin == 0].dropna()
+idade_hipertenso = idade[h_bin == 1].dropna()
+print(f"Nao hipertensos (n={len(idade_nao_hipertenso)}): media =␣
+↪{idade_nao_hipertenso.mean():.1f} anos")
+print(f"Hipertensos (n={len(idade_hipertenso)}): media = {idade_hipertenso.
+↪mean():.1f} anos")
+print(f"Diferenca: {idade_hipertenso.mean() - idade_nao_hipertenso.mean():.1f}␣
+↪anos")
+if len(idade_nao_hipertenso) == 0 or len(idade_hipertenso) == 0:
+print("Aviso: um dos grupos ficou vazio. Verifique os codigos de␣
+↪'hipertensao'.")
+else:
+plt.figure(figsize=(10, 6))
+plt.boxplot([idade_nao_hipertenso, idade_hipertenso], labels=["Nao␣
+↪Hipertenso", "Hipertenso"])
+plt.ylabel("Idade")
+plt.title("Idade por Status de Hipertensao")
+plt.grid(axis="y", alpha=0.3)
+plt.show()
+IDADE POR STATUS DE HIPERTENSAO
+Nao hipertensos (n=62297): media = 43.1 anos
+Hipertensos (n=23719): media = 59.4 anos
+Diferenca: 16.3 anos
+
+22
+
+[113]: # renda x hipertensao (visualizacao robusta)
+print("RENDA POR STATUS DE HIPERTENSAO")
+renda = pd.to_numeric(df_valid["renda_per_capita"], errors="coerce")
+h_bin = df_valid["hipertensao_bin"]
+renda_nao_hipertenso = renda[h_bin == 0].dropna()
+renda_hipertenso = renda[h_bin == 1].dropna()
+print(f"Nao hipertensos (n={len(renda_nao_hipertenso)}): media = R$␣
+↪{renda_nao_hipertenso.mean():.2f}")
+print(f"Hipertensos (n={len(renda_hipertenso)}): media = R$ {renda_hipertenso.
+↪mean():.2f}")
+if len(renda_nao_hipertenso) == 0 or len(renda_hipertenso) == 0:
+print("Aviso: um dos grupos ficou vazio. Verifique os codigos de␣
+↪'hipertensao'.")
+else:
+df_plot = pd.DataFrame({
+"Grupo": ["Nao Hipertenso"] * len(renda_nao_hipertenso) +␣
+↪["Hipertenso"] * len(renda_hipertenso),
+"Renda": pd.concat([renda_nao_hipertenso, renda_hipertenso],␣
+↪ignore_index=True)
+})
+
+23
+
+df_plot = df_plot[df_plot["Renda"] >= 0].copy()
+df_plot["Renda_log1p"] = np.log1p(df_plot["Renda"])
+p99 = float(df_plot["Renda"].quantile(0.99))
+df_central = df_plot[df_plot["Renda"] <= p99].copy()
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+sns.violinplot(
+data=df_plot,
+x="Grupo",
+y="Renda_log1p",
+inner="quartile",
+cut=0,
+ax=axes[0],
+palette=["#4e79a7", "#e15759"]
+)
+axes[0].set_title("Distribuicao de renda (escala log1p)")
+axes[0].set_xlabel("")
+axes[0].set_ylabel("log(1 + renda per capita)")
+sns.boxplot(
+data=df_central,
+x="Grupo",
+y="Renda",
+showfliers=False,
+ax=axes[1],
+palette=["#4e79a7", "#e15759"]
+)
+axes[1].set_title(f"Faixa central da renda (ate P99 = R$ {p99:,.0f})")
+axes[1].set_xlabel("")
+axes[1].set_ylabel("Renda per capita (R$)")
+axes[1].grid(axis="y", alpha=0.25)
+plt.suptitle("Renda por status de hipertensao", fontsize=13)
+plt.tight_layout()
+plt.show()
+resumo = (
+df_plot.groupby("Grupo")["Renda"]
+.agg(
+n="count",
+media="mean",
+mediana="median",
+p25=lambda s: s.quantile(0.25),
+p75=lambda s: s.quantile(0.75),
+p90=lambda s: s.quantile(0.90),
+
+24
+
+p99=lambda s: s.quantile(0.99),
+)
+.round(2)
+)
+print("\nResumo descritivo de renda por grupo:")
+display(resumo)
+RENDA POR STATUS DE HIPERTENSAO
+Nao hipertensos (n=62279): media = R$ 1590.43
+Hipertensos (n=23716): media = R$ 1742.13
+
+Resumo descritivo de renda por grupo:
+Grupo
+Hipertenso
+Nao Hipertenso
+
+n
+
+media
+
+mediana
+
+p25
+
+p75
+
+p90
+
+p99
+
+23716
+62279
+
+1742.13
+1590.43
+
+998.0
+960.0
+
+625.75
+490.00
+
+1799.0
+1666.0
+
+3399.0
+3300.0
+
+12999.85
+12383.42
+
+[114]: # crosstab sexo x hipertensao (usando mapeamento auxiliar da analise)
+tmp = df_valid.dropna(subset=["sexo", "hipertensao_bin"]).copy()
+tmp["sexo_label"] = tmp["sexo"].map({1: "Masculino", 2: "Feminino"}).
+↪fillna("Nao informado")
+tmp["hipertensao_pct"] = tmp["hipertensao_bin"].map({0: "Nao Hipertenso (%)", 1:
+↪ "Hipertenso (%)"})
+ct = pd.crosstab(tmp["sexo_label"], tmp["hipertensao_pct"], normalize="index")␣
+↪* 100
+ct = ct.reindex(columns=["Nao Hipertenso (%)", "Hipertenso (%)"], fill_value=0)
+print("PREVALENCIA DE HIPERTENSAO POR SEXO")
+print(ct.round(2))
+PREVALENCIA DE HIPERTENSAO POR SEXO
+hipertensao_pct Nao Hipertenso (%)
+
+Hipertenso (%)
+25
+
+sexo_label
+Feminino
+Masculino
+
+68.50
+76.83
+
+31.50
+23.17
+
+[115]: # visualizacao da prevalencia por sexo (mais direta)
+labels = ct.index
+nao_hip = ct['Nao Hipertenso (%)']
+hip = ct['Hipertenso (%)']
+x = np.arange(len(labels))
+width = 0.38
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+bars1 = axes[0].bar(x - width/2, nao_hip, width, label='Nao Hipertenso',␣
+↪color='#4E79A7')
+bars2 = axes[0].bar(x + width/2, hip, width, label='Hipertenso',␣
+↪color='#E15759')
+axes[0].set_xticks(x)
+axes[0].set_xticklabels(labels)
+axes[0].set_ylabel('Percentual (%)')
+axes[0].set_title('Prevalencia de Hipertensao por Sexo')
+axes[0].legend()
+axes[0].grid(axis='y', alpha=0.2)
+for bars in [bars1, bars2]:
+for b in bars:
+h = b.get_height()
+axes[0].text(b.get_x() + b.get_width()/2, h + 0.6, f"{h:.1f}%",␣
+↪ha='center', fontsize=9)
+ct.plot(kind='bar', stacked=True, ax=axes[1], color=['#4E79A7', '#E15759'])
+axes[1].set_title('Composicao percentual por sexo (100%)')
+axes[1].set_ylabel('Percentual (%)')
+axes[1].set_xlabel('Sexo')
+axes[1].legend(loc='upper right')
+axes[1].grid(axis='y', alpha=0.2)
+plt.tight_layout()
+plt.show()
+
+26
+
+1.6
+
+6. Executar pre-processamento
+
+rodar o pipeline de limpeza, feature engineering e transformacoes
+[116]: # etapa 1: limpeza
+print("ETAPA 1: LIMPEZA")
+print("-" * 70)
+df_clean = clean_pns_data(df_selected)
+print(f"Shape apos limpeza: {df_clean.shape}")
+ETAPA 1: LIMPEZA
+---------------------------------------------------------------------Após filtro de público-alvo (com resposta): 89954 registros
+Limpeza completa: 87657 registros, 39 features
+Shape apos limpeza: (87657, 39)
+[117]: # verificar variaveis agregadas criadas
+print("Variaveis agregadas de multimorbidade criadas:")
+print(f"n_doencas: {df_clean['n_doencas'].describe()}")
+print(f"\ndoenca_cronica: {df_clean['doenca_cronica'].value_counts()}")
+Variaveis agregadas de multimorbidade criadas:
+n_doencas: count
+87657.0
+mean
+0.771838
+std
+1.190015
+min
+0.0
+25%
+0.0
+50%
+0.0
+75%
+1.0
+max
+15.0
+Name: n_doencas, dtype: Float64
+doenca_cronica: doenca_cronica
+27
+
+0
+49622
+1
+38035
+Name: count, dtype: Int64
+[118]: # etapa 2: feature engineering
+print("\nETAPA 2: FEATURE ENGINEERING")
+print("-" * 70)
+df_engineered = apply_feature_engineering(df_clean)
+print(f"Shape apos engenharia: {df_engineered.shape}")
+print(f"Features criadas: {df_engineered.shape[1] - df_clean.shape[1]}")
+ETAPA 2: FEATURE ENGINEERING
+---------------------------------------------------------------------Iniciando engenharia de features: 87657 registros
+Engenharia completa: 87657 registros, 77 features
+Shape apos engenharia: (87657, 77)
+Features criadas: 38
+[119]: # etapa 3: transformacoes
+print("\nETAPA 3: TRANSFORMACOES ESTATISTICAS")
+print("-" * 70)
+df_final = apply_transformations(df_engineered)
+print(f"Shape final: {df_final.shape}")
+ETAPA 3: TRANSFORMACOES ESTATISTICAS
+---------------------------------------------------------------------Aplicando transformações estatísticas: 87657 registros
+Transformações completas: 87657 registros, 78 features
+Shape final: (87657, 78)
+[120]: # comparar antes e depois das transformacoes
+print("\nCOMPARACAO ANTES/DEPOIS TRANSFORMACOES")
+print("-" * 70)
+# renda
+if 'renda_per_capita_log' in df_final.columns:
+print("\nRenda per capita:")
+print(f" Skewness original: {df_engineered['renda_per_capita'].skew():.
+↪2f}")
+print(f" Skewness log: {df_final['renda_per_capita_log'].skew():.2f}")
+# idade
+if 'idade_centrada' in df_final.columns:
+print("\nIdade:")
+print(f" Media original: {df_engineered['idade'].mean():.2f}")
+print(f" Media centrada: {df_final['idade_centrada'].mean():.2f}")
+
+28
+
+COMPARACAO ANTES/DEPOIS TRANSFORMACOES
+---------------------------------------------------------------------Renda per capita:
+Skewness original: 13.53
+Skewness log: -1.80
+
+1.7
+
+7. Analise dos dados processados
+
+exploração dos dados processados
+[121]: # info geral
+df_final.info()
+<class 'pandas.DataFrame'>
+Index: 87657 entries, 0 to 293720
+Data columns (total 78 columns):
+#
+Column
+Non-Null Count
+--- ------------------0
+situacao_domicilio
+87657 non-null
+1
+acesso_internet
+87657 non-null
+2
+plano_saude
+87657 non-null
+3
+hipertensao
+85995 non-null
+4
+diabetes
+81504 non-null
+5
+doenca_coracao
+87657 non-null
+6
+infarto
+87657 non-null
+7
+angina
+87657 non-null
+8
+insuficiencia_cardiaca 87657 non-null
+9
+arritmia
+87657 non-null
+10 avc
+87657 non-null
+11 asma
+87657 non-null
+12 artrite
+87657 non-null
+13 dort
+87657 non-null
+14 depressao
+87657 non-null
+15 doenca_pulmao
+87657 non-null
+16 enfisema
+87657 non-null
+17 bronquite
+87657 non-null
+18 insuficiencia_renal
+87657 non-null
+19 infra_agua
+87657 non-null
+20 sexo_feminino
+87657 non-null
+21 n_doencas
+87657 non-null
+22 doenca_cronica
+87657 non-null
+23 uf_AL
+87657 non-null
+24 uf_AM
+87657 non-null
+25 uf_AP
+87657 non-null
+26 uf_BA
+87657 non-null
+27 uf_CE
+87657 non-null
+
+29
+
+Dtype
+----Int64
+Int64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+float64
+Int64
+Int64
+Int64
+Int64
+bool
+bool
+bool
+bool
+bool
+
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+
+uf_DF
+uf_ES
+uf_GO
+uf_MA
+uf_MG
+uf_MS
+uf_MT
+uf_PA
+uf_PB
+uf_PE
+uf_PI
+uf_PR
+uf_RJ
+uf_RN
+uf_RO
+uf_RR
+uf_RS
+uf_SC
+uf_SE
+uf_SP
+uf_TO
+domicilio_Apartamento
+domicilio_Cortico
+domicilio_Ignorado
+raca_Preta
+raca_Amarela
+raca_Parda
+raca_Indigena
+raca_Ignorado
+escolaridade_ord
+imc
+tabagismo_status
+tabagismo_ativo
+alcool_status
+alcool_ativo
+atividade_status
+atividade_ativo
+faixa_etaria
+regiao_norte
+regiao_nordeste
+regiao_centro_oeste
+regiao_sudeste
+regiao_sul
+esc_scaled
+renda_scaled
+indice_socioeconomico
+renda_domiciliar_log
+renda_per_capita_log
+
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+80390 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+80390 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+87657 non-null
+30
+
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+bool
+float64
+float64
+Int64
+boolean
+Int64
+boolean
+Int64
+boolean
+category
+int64
+int64
+int64
+int64
+int64
+float64
+float64
+float64
+float64
+float64
+
+76 idade_c
+87657 non-null float64
+77 idade_c2
+87657 non-null float64
+dtypes: Int64(9), bool(34), boolean(3), category(1), float64(26), int64(5)
+memory usage: 31.6 MB
+[122]: # missing nos dados finais
+missing_final = pd.DataFrame({
+'n_missing': df_final.isna().sum(),
+'pct_missing': (df_final.isna().sum() / len(df_final) * 100).round(2)
+}).sort_values('n_missing', ascending=False)
+print("Missing values nos dados finais:")
+missing_final[missing_final['n_missing'] > 0].head(20)
+Missing values nos dados finais:
+[122]:
+escolaridade_ord
+esc_scaled
+diabetes
+hipertensao
+
+n_missing
+7267
+7267
+6153
+1662
+
+pct_missing
+8.29
+8.29
+7.02
+1.90
+
+[123]: # visualizar missing final
+top_missing_final = missing_final[missing_final['n_missing'] > 0].head(15)
+if len(top_missing_final) > 0:
+plt.figure(figsize=(12, 6))
+plt.barh(range(len(top_missing_final)), top_missing_final['pct_missing'],␣
+↪color='salmon')
+plt.yticks(range(len(top_missing_final)), top_missing_final.index)
+plt.xlabel('Percentual Missing (%)')
+plt.title('Top 15 Variaveis com Missing nos Dados Processados')
+plt.tight_layout()
+plt.show()
+
+31
+
+1.8
+
+8. Correlacoes
+
+calcular correlacoes entre variaveis numericas
+[124]: # selecionar apenas numericas
+numericas = df_final.select_dtypes(include=[np.number]).columns.tolist()
+print(f"Total de variaveis numericas: {len(numericas)}")
+Total de variaveis numericas: 40
+[125]: # correlacao com hipertensao (top por magnitude)
+if 'hipertensao' in df_final.columns:
+corr_hipertensao = df_final[numericas].corrwith(df_final['hipertensao'])
+corr_hipertensao = corr_hipertensao.drop(labels=['hipertensao'],␣
+↪errors='ignore').dropna()
+top_corr = corr_hipertensao.reindex(corr_hipertensao.abs().
+↪sort_values(ascending=False).head(20).index)
+print('Top 20 correlacoes com hipertensao (por valor absoluto):')
+print(top_corr.sort_values(ascending=False).round(4))
+plt.figure(figsize=(10, 8))
+top_corr_plot = top_corr.sort_values(ascending=True)
+colors = ['#E15759' if x < 0 else '#4E79A7' for x in top_corr_plot.values]
+bars = plt.barh(top_corr_plot.index, top_corr_plot.values, color=colors,␣
+↪alpha=0.85)
+for bar, val in zip(bars, top_corr_plot.values):
+
+32
+
+x_txt = val + (0.01 if val >= 0 else -0.01)
+ha = 'left' if val >= 0 else 'right'
+plt.text(x_txt, bar.get_y() + bar.get_height()/2, f"{val:.3f}",␣
+↪va='center', ha=ha, fontsize=8)
+plt.xlabel('Correlacao de Pearson com Hipertensao')
+plt.title('Top 20 Variaveis Correlacionadas com Hipertensao')
+plt.axvline(x=0, color='black', linestyle='--', linewidth=0.8)
+plt.grid(axis='x', alpha=0.2)
+plt.tight_layout()
+plt.show()
+Top 20 correlacoes com hipertensao (por valor absoluto):
+doenca_cronica
+0.6948
+n_doencas
+0.6197
+idade_c
+0.4279
+diabetes
+0.2591
+imc
+0.1976
+doenca_coracao
+0.1967
+artrite
+0.1771
+avc
+0.1439
+idade_c2
+0.1316
+infarto
+0.1296
+arritmia
+0.1188
+insuficiencia_cardiaca
+0.1042
+depressao
+0.0971
+angina
+0.0945
+sexo_feminino
+0.0931
+insuficiencia_renal
+0.0702
+alcool_status
+-0.1030
+acesso_internet
+-0.1105
+escolaridade_ord
+-0.1569
+esc_scaled
+-0.1569
+dtype: float64
+
+33
+
+[126]: # heatmap de correlacao - variaveis de doencas
+doencas_final = [col for col in doencas if col in df_final.columns]
+if len(doencas_final) > 0:
+corr_doencas = df_final[doencas_final].corr()
+plt.figure(figsize=(12, 10))
+sns.heatmap(corr_doencas, annot=True, fmt='.2f', cmap='RdBu_r',
+center=0, square=True, linewidths=0.5)
+plt.title('Correlacao entre Doencas Cronicas')
+plt.tight_layout()
+plt.show()
+
+34
+
+[127]: # heatmap geral - amostra de variaveis
+# selecionar variaveis de interesse
+vars_interesse = ['idade_centrada', 'renda_per_capita_log',␣
+↪'renda_domiciliar_log',
+'sexo_feminino', 'imc', 'n_doencas', 'doenca_cronica',␣
+↪'escolaridade_ord'] + doencas_final[:5]
+vars_disponiveis = [v for v in vars_interesse if v in df_final.columns]
+if len(vars_disponiveis) > 2:
+corr_interesse = df_final[vars_disponiveis].corr()
+plt.figure(figsize=(14, 12))
+sns.heatmap(corr_interesse, annot=True, fmt='.2f', cmap='coolwarm',
+
+35
+
+center=0, square=True, linewidths=0.5, cbar_kws={'label':␣
+'Correlacao'})
+plt.title('Heatmap de Correlacao - Variaveis Selecionadas')
+plt.tight_layout()
+plt.show()
+
+↪
+
+1.9
+
+9. Testar diferentes combinacoes
+
+testar algumas relacoes interessantes
+[128]: # multimorbidade por faixa etaria
+print("NUMERO DE DOENCAS POR FAIXA ETARIA")
+print(df_final['faixa_etaria'].value_counts(dropna=False).sort_index())
+print("\n")
+
+36
+
+by_idade = df_final.groupby('faixa_etaria')['n_doencas'].agg(['count', 'mean',␣
+↪'median', 'std'])
+print(by_idade)
+plt.figure(figsize=(10, 6))
+df_final.boxplot(column='n_doencas', by='faixa_etaria', figsize=(10, 6))
+plt.xlabel('Faixa Etaria')
+plt.ylabel('Numero de Doencas')
+plt.title('Multimorbidade por Faixa Etaria')
+plt.suptitle('')
+plt.tight_layout()
+plt.show()
+NUMERO DE DOENCAS POR FAIXA ETARIA
+faixa_etaria
+18-29
+16637
+30-39
+17892
+40-49
+16313
+50-59
+15512
+60+
+21303
+Name: count, dtype: int64
+
+faixa_etaria
+18-29
+30-39
+40-49
+50-59
+60+
+
+count
+
+mean
+
+median
+
+std
+
+16637
+17892
+16313
+15512
+21303
+
+0.233997
+0.364185
+0.621897
+1.002256
+1.481294
+
+0.0
+0.0
+0.0
+1.0
+1.0
+
+0.576763
+0.746612
+0.996495
+1.284668
+1.487441
+
+<Figure size 1000x600 with 0 Axes>
+
+37
+
+[129]: # hipertensao por faixa etaria e sexo
+if 'sexo_feminino' in df_final.columns:
+df_final['sexo_label'] = df_final['sexo_feminino'].map({0: 'Masculino', 1:␣
+↪'Feminino'})
+prev_idade_sexo = df_final.groupby(['faixa_etaria',␣
+'sexo_label'])['hipertensao'].mean() * 100
+print("\nPREVALENCIA DE HIPERTENSAO POR IDADE E SEXO (%)")
+print(prev_idade_sexo.unstack())
+
+↪
+
+# visualizar
+prev_idade_sexo.unstack().plot(kind='bar', figsize=(10, 6),␣
+↪color=['skyblue', 'pink'])
+plt.xlabel('Faixa Etaria')
+plt.ylabel('Prevalencia de Hipertensao (%)')
+plt.title('Prevalencia de Hipertensao por Idade e Sexo')
+plt.legend(title='Sexo')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+PREVALENCIA DE HIPERTENSAO POR IDADE E SEXO (%)
+sexo_label
+Feminino Masculino
+faixa_etaria
+18-29
+6.468085
+3.553166
+38
+
+30-39
+40-49
+50-59
+60+
+
+12.732332
+25.549875
+41.009040
+61.110162
+
+9.258174
+18.520448
+31.373367
+49.100148
+
+[130]: # renda vs numero de doencas
+if 'renda_per_capita_log' in df_final.columns:
+# criar quartis de renda
+df_final['quartil_renda'] = pd.qcut(df_final['renda_per_capita_log'],
+q=4, labels=['Q1 (baixa)', 'Q2', 'Q3',␣
+↪'Q4 (alta)'])
+print("\nNUMERO DE DOENCAS POR QUARTIL DE RENDA")
+by_renda = df_final.groupby('quartil_renda')['n_doencas'].agg(['mean',␣
+↪'median'])
+print(by_renda)
+plt.figure(figsize=(10, 6))
+df_final.boxplot(column='n_doencas', by='quartil_renda')
+plt.xlabel('Quartil de Renda')
+plt.ylabel('Numero de Doencas')
+plt.title('Numero de Doencas por Quartil de Renda')
+plt.suptitle('')
+plt.tight_layout()
+plt.show()
+
+39
+
+NUMERO DE DOENCAS POR QUARTIL DE RENDA
+mean median
+quartil_renda
+Q1 (baixa)
+0.573069
+0.0
+Q2
+0.832154
+0.0
+Q3
+0.803215
+0.0
+Q4 (alta)
+0.878328
+0.0
+<Figure size 1000x600 with 0 Axes>
+
+[131]: # IMC vs hipertensao
+if 'imc' in df_final.columns:
+# categorias de IMC
+df_final['categoria_imc'] = pd.cut(df_final['imc'],
+bins=[0, 18.5, 25, 30, 100],
+labels=['Baixo peso', 'Normal',␣
+↪'Sobrepeso', 'Obesidade'])
+print("\nPREVALENCIA DE HIPERTENSAO POR CATEGORIA DE IMC (%)")
+prev_imc = df_final.groupby('categoria_imc')['hipertensao'].mean() * 100
+print(prev_imc)
+
+40
+
+prev_imc.plot(kind='bar', figsize=(8, 6), color='coral')
+plt.xlabel('Categoria de IMC')
+plt.ylabel('Prevalencia de Hipertensao (%)')
+plt.title('Prevalencia de Hipertensao por Categoria de IMC')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+PREVALENCIA DE HIPERTENSAO POR CATEGORIA DE IMC (%)
+categoria_imc
+Baixo peso
+18.283166
+Normal
+19.585004
+Sobrepeso
+28.799553
+Obesidade
+41.616230
+Name: hipertensao, dtype: float64
+
+41
+
+1.10
+
+10. Testar variaveis de estilo de vida
+
+[142]: # AUDITORIA RAPIDA: confirmar codificacao de hipertensao e comparar prevalencias
+import pandas as pd
+import numpy as np
+print("=" * 80)
+print("AUDITORIA DE HIPERTENSAO - TESTES DE ESTILO DE VIDA")
+print("=" * 80)
+# 1) Diagnostico da codificacao da hipertensao em df_final
+h_raw = pd.to_numeric(df_final["hipertensao"], errors="coerce")
+valores_raw = sorted(pd.Series(h_raw.dropna().unique()).tolist())
+print("\n1) Valores observados em df_final['hipertensao']:", valores_raw)
+print(df_final["hipertensao"].value_counts(dropna=False).sort_index())
+# 2) Padronizacao defensiva para auditoria (garante alvo binario 0/1)
+val_set = set(pd.Series(h_raw.dropna().unique()))
+if val_set.issubset({1, 2, 9}):
+h_bin = h_raw.map({1: 1, 2: 0, 9: np.nan})
+elif val_set.issubset({0, 1}):
+h_bin = h_raw
+else:
+h_bin = h_raw.map({1: 1, 2: 0, 0: 0, 9: np.nan})
+# dataframe auxiliar para auditoria
+aux = df_final.copy()
+aux["hipertensao_audit"] = h_bin
+print("\n2) Distribuicao padronizada para auditoria (0=nao, 1=sim):")
+print(aux["hipertensao_audit"].value_counts(dropna=False).sort_index())
+# 3) Garante labels de estilo de vida para agrupamento (caso ainda nao existam)
+if "tabagismo_label" not in aux.columns and "tabagismo_status" in aux.columns:
+aux["tabagismo_label"] = aux["tabagismo_status"].map({0: "Nunca fumou", 1:␣
+↪"Ex-fumante", 2: "Fumante atual"})
+if "atividade_label" not in aux.columns and "atividade_status" in aux.columns:
+aux["atividade_label"] = aux["atividade_status"].map({0: "Sedentario", 1:␣
+↪"Baixa freq", 2: "Moderada", 3: "Alta"})
+if "alcool_label" not in aux.columns and "alcool_status" in aux.columns:
+aux["alcool_label"] = aux["alcool_status"].map({0: "Nao bebe", 1: "Raro", 2:
+↪ "Moderado", 3: "Frequente"})
+# 4) Compara prevalencia calculada no formato atual vs alvo auditado
+
+42
+
+def compara_prev(df_in, grupo_col):
+tmp = df_in[[grupo_col, "hipertensao", "hipertensao_audit"]].
+↪dropna(subset=[grupo_col]).copy()
+prev_atual = (tmp.groupby(grupo_col)["hipertensao"].mean() * 100).
+↪rename("prev_atual_%")
+prev_audit = (tmp.groupby(grupo_col)["hipertensao_audit"].mean() * 100).
+↪rename("prev_audit_%")
+n_grupo = tmp.groupby(grupo_col).size().rename("n")
+out = pd.concat([n_grupo, prev_atual, prev_audit], axis=1)
+out["diff_pp"] = (out["prev_atual_%"] - out["prev_audit_%"]).round(6)
+return out.sort_values("prev_audit_%", ascending=False)
+for coluna in ["tabagismo_label", "atividade_label", "alcool_label"]:
+if coluna in aux.columns:
+print(f"\n3) Auditoria por {coluna}:")
+tabela = compara_prev(aux, coluna)
+display(tabela.round(4))
+max_diff = tabela["diff_pp"].abs().max()
+if pd.isna(max_diff) or max_diff < 1e-6:
+print("Status: OK - sem indicio de inversao (diff ~= 0).")
+else:
+print(f"Status: ATENCAO - diferenca detectada (max |diff| =␣
+↪{max_diff:.4f} p.p.).")
+print("\nInterpretacao rapida:")
+print("- diff_pp ~= 0 em todos os grupos: o codigo atual esta consistente.")
+print("- diff_pp relevante: revisar codificacao de hipertensao antes dos␣
+↪graficos de estilo de vida.")
+print("=" * 80)
+================================================================================
+AUDITORIA DE HIPERTENSAO - TESTES DE ESTILO DE VIDA
+================================================================================
+1) Valores observados em df_final['hipertensao']: [0.0, 1.0]
+hipertensao
+0.0
+62279
+1.0
+23716
+NaN
+1662
+Name: count, dtype: int64
+2) Distribuicao padronizada para auditoria (0=nao, 1=sim):
+hipertensao_audit
+0.0
+62279
+
+43
+
+1.0
+23716
+NaN
+1662
+Name: count, dtype: int64
+3) Auditoria por tabagismo_label:
+tabagismo_label
+Ex-fumante
+Nunca fumou
+Fumante atual
+
+n
+
+prev_atual_%
+
+prev_audit_%
+
+diff_pp
+
+23814
+52624
+11219
+
+36.8896
+24.2097
+23.4560
+
+36.8896
+24.2097
+23.4560
+
+0.0
+0.0
+0.0
+
+Status: OK - sem indicio de inversao (diff ~= 0).
+3) Auditoria por atividade_label:
+atividade_label
+Sedentario
+Alta
+Moderada
+Baixa freq
+
+n
+
+prev_atual_%
+
+prev_audit_%
+
+diff_pp
+
+54128
+11124
+10845
+11560
+
+30.3409
+25.0114
+24.1328
+20.3705
+
+30.3409
+25.0114
+24.1328
+20.3705
+
+0.0
+0.0
+0.0
+0.0
+
+Status: OK - sem indicio de inversao (diff ~= 0).
+3) Auditoria por alcool_label:
+alcool_label
+Nao bebe
+Frequente
+Raro
+Moderado
+
+n
+
+prev_atual_%
+
+prev_audit_%
+
+diff_pp
+
+52831
+4949
+13976
+15901
+
+31.9296
+25.8345
+21.5665
+18.8821
+
+31.9296
+25.8345
+21.5665
+18.8821
+
+0.0
+0.0
+0.0
+0.0
+
+Status: OK - sem indicio de inversao (diff ~= 0).
+Interpretacao rapida:
+- diff_pp ~= 0 em todos os grupos: o codigo atual esta consistente.
+- diff_pp relevante: revisar codificacao de hipertensao antes dos graficos de
+estilo de vida.
+================================================================================
+[132]: # tabagismo vs hipertensao
+if 'tabagismo_status' in df_final.columns:
+tabag_labels = {0: 'Nunca fumou', 1: 'Ex-fumante', 2: 'Fumante atual'}
+df_final['tabagismo_label'] = df_final['tabagismo_status'].map(tabag_labels)
+print("PREVALENCIA DE HIPERTENSAO POR STATUS DE TABAGISMO (%)")
+prev_tabag = df_final.groupby('tabagismo_label')['hipertensao'].mean() * 100
+print(prev_tabag)
+
+44
+
+prev_tabag.plot(kind='bar', figsize=(8, 6), color=['green', 'orange',␣
+'red'])
+plt.xlabel('Status de Tabagismo')
+plt.ylabel('Prevalencia de Hipertensao (%)')
+plt.title('Hipertensao por Status de Tabagismo')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+↪
+
+print("\nTABAGISMO ATIVO:")
+print(df_final['tabagismo_ativo'].value_counts())
+PREVALENCIA DE HIPERTENSAO POR STATUS DE TABAGISMO (%)
+tabagismo_label
+Ex-fumante
+36.889608
+Fumante atual
+23.455991
+Nunca fumou
+24.209712
+Name: hipertensao, dtype: float64
+
+45
+
+TABAGISMO ATIVO:
+tabagismo_ativo
+False
+76438
+True
+11219
+Name: count, dtype: Int64
+[133]: # atividade fisica vs hipertensao
+if 'atividade_status' in df_final.columns:
+ativ_labels = {0: 'Sedentario', 1: 'Baixa freq', 2: 'Moderada', 3: 'Alta'}
+df_final['atividade_label'] = df_final['atividade_status'].map(ativ_labels)
+print("PREVALENCIA DE HIPERTENSAO POR NIVEL DE ATIVIDADE FISICA (%)")
+prev_ativ = df_final.groupby('atividade_label')['hipertensao'].mean() * 100
+print(prev_ativ)
+prev_ativ.plot(kind='bar', figsize=(8, 6), color=['red', 'orange', 'blue',␣
+'green'])
+plt.xlabel('Nivel de Atividade Fisica')
+plt.ylabel('Prevalencia de Hipertensao (%)')
+plt.title('Hipertensao por Nivel de Atividade Fisica')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+↪
+
+print("\nATIVIDADE ATIVA:")
+print(df_final['atividade_ativo'].value_counts())
+PREVALENCIA DE HIPERTENSAO POR NIVEL DE ATIVIDADE FISICA (%)
+atividade_label
+Alta
+25.011385
+Baixa freq
+20.370535
+Moderada
+24.132786
+Sedentario
+30.340873
+Name: hipertensao, dtype: float64
+
+46
+
+ATIVIDADE ATIVA:
+atividade_ativo
+False
+52980
+True
+34677
+Name: count, dtype: Int64
+[134]: # alcool vs hipertensao
+if 'alcool_status' in df_final.columns:
+alcool_labels = {0: 'Nao bebe', 1: 'Raro', 2: 'Moderado', 3: 'Frequente'}
+df_final['alcool_label'] = df_final['alcool_status'].map(alcool_labels)
+print("PREVALENCIA DE HIPERTENSAO POR INTENSIDADE DE ALCOOL (%)")
+prev_alcool = df_final.groupby('alcool_label')['hipertensao'].mean() * 100
+print(prev_alcool)
+prev_alcool.plot(kind='bar', figsize=(8, 6), color=['gray', 'blue',␣
+'orange', 'red'])
+plt.xlabel('Intensidade de Consumo de Alcool')
+plt.ylabel('Prevalencia de Hipertensao (%)')
+plt.title('Hipertensao por Intensidade de Consumo de Alcool')
+
+↪
+
+47
+
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+print("\nALCOOL ATIVO:")
+print(df_final['alcool_ativo'].value_counts())
+PREVALENCIA DE HIPERTENSAO POR INTENSIDADE DE ALCOOL (%)
+alcool_label
+Frequente
+25.834543
+Moderado
+18.882107
+Nao bebe
+31.929602
+Raro
+21.566477
+Name: hipertensao, dtype: float64
+
+ALCOOL ATIVO:
+alcool_ativo
+False
+52831
+True
+34826
+Name: count, dtype: Int64
+
+48
+
+1.11
+
+11. Salvar dados processados
+
+[135]: # salvar arquivo final
+output_path = '../data/processed/pns_2019_preprocessed.csv'
+df_final.to_csv(output_path, index=False)
+print(f"Dados processados salvos em: {output_path}")
+print(f"Shape final: {df_final.shape}")
+Dados processados salvos em: ../data/processed/pns_2019_preprocessed.csv
+Shape final: (87657, 84)
+
+1.12
+
+Resumo
+
+Pipeline executado com sucesso: 1. Selecao de features 2. Limpeza e filtragem 3. Feature engineering 4. Transformacoes estatisticas
+
+1.13
+
+12. Bloco adicional organizado (socioeconomia, territorio e qualidade de
+vida)
+
+Esta seção fica no final para facilitar controle de execução.
+Objetivos deste bloco: - analisar domicilio, internet e plano de saude vs doenca cronica - analisar
+distribuicao de doenca cronica por UF - analisar renda, escolaridade, plano, moradia e raca vs
+doenca cronica - analisar qualidade de vida (imc, atividade, tabagismo, alcool) vs renda, escolaridade e moradia
+1.13.1
+
+12.1 Preparacao das variaveis auxiliares
+
+Aqui montamos labels (UF, moradia, raca), quartis de renda e dataframe auxiliar para as
+tabelas/graficos.
+[136]: df_ana = df_final.copy()
+# alvo binario (qualquer doenca cronica)
+if 'doenca_cronica' not in df_ana.columns and 'n_doencas' in df_ana.columns:
+df_ana['doenca_cronica'] = (df_ana['n_doencas'] > 0).astype('Int64')
+# UF a partir dos dummies
+uf_cols = [c for c in df_ana.columns if c.startswith('uf_')]
+if uf_cols:
+uf_mat = df_ana[uf_cols].astype(int)
+uf_any = uf_mat.sum(axis=1) > 0
+uf_estado = uf_mat.idxmax(axis=1).str.replace('uf_', '', regex=False)
+df_ana['uf_estado'] = np.where(uf_any, uf_estado, 'UF_base')
+else:
+df_ana['uf_estado'] = 'UF_nao_disponivel'
+# moradia a partir dos dummies
+dom_cols = [c for c in df_ana.columns if c.startswith('domicilio_')]
+if dom_cols:
+49
+
+dom_mat = df_ana[dom_cols].astype(int)
+dom_any = dom_mat.sum(axis=1) > 0
+dom_tipo = dom_mat.idxmax(axis=1).str.replace('domicilio_', '', regex=False)
+df_ana['domicilio_tipo'] = np.where(dom_any, dom_tipo, 'Casa_base')
+else:
+df_ana['domicilio_tipo'] = 'Nao_disponivel'
+# raca a partir dos dummies
+raca_cols = [c for c in df_ana.columns if c.startswith('raca_')]
+if raca_cols:
+raca_mat = df_ana[raca_cols].astype(int)
+raca_any = raca_mat.sum(axis=1) > 0
+raca_tipo = raca_mat.idxmax(axis=1).str.replace('raca_', '', regex=False)
+df_ana['raca_label'] = np.where(raca_any, raca_tipo, 'Branca_base')
+else:
+df_ana['raca_label'] = 'Nao_disponivel'
+# labels basicos
+if 'plano_saude' in df_ana.columns:
+df_ana['plano_saude_label'] = df_ana['plano_saude'].map({1: 'Tem plano', 0:␣
+↪'Nao tem plano'})
+if 'acesso_internet' in df_ana.columns:
+df_ana['internet_label'] = df_ana['acesso_internet'].map({1: 'Tem␣
+↪internet', 0: 'Nao tem internet'})
+if 'situacao_domicilio' in df_ana.columns:
+df_ana['situacao_domicilio_label'] = df_ana['situacao_domicilio'].map({1:␣
+↪'Urbano', 2: 'Rural'})
+# renda de referencia e quartis
+if 'renda_per_capita' in df_ana.columns:
+df_ana['renda_ref'] = df_ana['renda_per_capita']
+elif 'renda_per_capita_log' in df_ana.columns:
+df_ana['renda_ref'] = np.expm1(df_ana['renda_per_capita_log'])
+else:
+df_ana['renda_ref'] = np.nan
+if df_ana['renda_ref'].notna().sum() > 10:
+df_ana['quartil_renda'] = pd.qcut(
+df_ana['renda_ref'].rank(method='first'),
+q=4,
+labels=['Q1 (menor)', 'Q2', 'Q3', 'Q4 (maior)']
+)
+print('Preparacao concluida:', df_ana.shape)
+Preparacao concluida: (87657, 91)
+
+50
+
+1.13.2
+
+12.2 Domicilio, internet e plano de saude vs doenca cronica
+
+[137]: vars_base = ['situacao_domicilio_label', 'internet_label', 'plano_saude_label',␣
+↪'domicilio_tipo']
+for v in vars_base:
+if v in df_ana.columns and 'doenca_cronica' in df_ana.columns:
+tab = df_ana.groupby(v)['doenca_cronica'].agg(['mean', 'count']).
+↪sort_values('mean', ascending=False)
+tab['prev_doenca_cronica_%'] = (tab['mean'] * 100).round(2)
+print(f'\n{v}:')
+print(tab[['count', 'prev_doenca_cronica_%']])
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+plot_vars = [
+('situacao_domicilio_label', 'Situacao domicilio'),
+('internet_label', 'Acesso internet'),
+('plano_saude_label', 'Plano de saude')
+]
+for i, (v, titulo) in enumerate(plot_vars):
+if v in df_ana.columns:
+s = (df_ana.groupby(v)['doenca_cronica'].mean() * 100).
+↪sort_values(ascending=False)
+s.plot(kind='bar', ax=axes[i], color='steelblue')
+axes[i].set_title(f'{titulo} vs doenca cronica')
+axes[i].set_ylabel('Prevalencia (%)')
+axes[i].set_xlabel('')
+axes[i].tick_params(axis='x', rotation=20)
+plt.tight_layout()
+plt.show()
+situacao_domicilio_label:
+situacao_domicilio_label
+Urbano
+
+count
+
+prev_doenca_cronica_%
+
+67548
+
+44.43
+
+internet_label:
+internet_label
+Nao tem internet
+Tem internet
+
+count
+
+prev_doenca_cronica_%
+
+20865
+66792
+
+50.09
+41.3
+
+plano_saude_label:
+plano_saude_label
+Tem plano
+Nao tem plano
+
+count
+
+prev_doenca_cronica_%
+
+20057
+67600
+
+48.66
+41.83
+
+51
+
+domicilio_tipo:
+domicilio_tipo
+Apartamento
+Casa_base
+Cortico
+
+1.13.3
+
+count
+
+prev_doenca_cronica_%
+
+10601
+76819
+237
+
+43.84
+43.36
+33.76
+
+12.3 Distribuicao de doenca cronica por UF
+
+[138]: if 'uf_estado' in df_ana.columns and 'doenca_cronica' in df_ana.columns:
+prev_uf = (
+df_ana
+.groupby('uf_estado')['doenca_cronica']
+.mean()
+.mul(100)
+.round(2)
+.reset_index()
+.rename(columns={'doenca_cronica': 'prev_%'})
+)
+print(prev_uf)
+mapa = malha_territorial.merge(
+prev_uf,
+left_on="SIGLA_UF",
+right_on="uf_estado"
+)
+plt.figure(figsize=(10,10))
+mapa.plot(
+column="prev_%",
+cmap="Reds",
+legend=True,
+edgecolor="black"
+
+52
+
+)
+plt.title("Prevalência de Doença Crônica por UF (%)")
+plt.axis("off")
+plt.show()
+uf_estado
+0
+AL
+1
+AM
+2
+AP
+3
+BA
+4
+CE
+5
+DF
+6
+ES
+7
+GO
+8
+MA
+9
+MG
+10
+MS
+11
+MT
+12
+PA
+13
+PB
+14
+PE
+15
+PI
+16
+PR
+17
+RJ
+18
+RN
+19
+RO
+20
+RR
+21
+RS
+22
+SC
+23
+SE
+24
+SP
+25
+TO
+26
+UF_base
+
+prev_%
+42.96
+33.51
+36.24
+42.08
+41.18
+36.94
+48.15
+48.15
+35.33
+51.21
+45.89
+39.27
+34.36
+43.69
+42.27
+41.14
+48.11
+48.33
+43.98
+37.61
+34.53
+54.75
+47.42
+45.09
+49.3
+40.44
+36.87
+
+<Figure size 1000x1000 with 0 Axes>
+
+53
+
+[ ]: if 'uf_estado' in df_ana.columns and 'hipertensao' in df_ana.columns:
+prev_uf = (
+df_ana
+.groupby('uf_estado')['hipertensao']
+.mean()
+.mul(100)
+.round(2)
+.reset_index()
+.rename(columns={'hipertensao': 'prev_%'})
+)
+print(prev_uf)
+mapa = malha_territorial.merge(
+prev_uf,
+left_on="SIGLA_UF",
+right_on="uf_estado"
+)
+plt.figure(figsize=(10,10))
+mapa.plot(
+
+54
+
+column="prev_%",
+cmap="Reds",
+legend=True,
+edgecolor="black"
+)
+plt.title("Prevalência de Hipertensão por UF (%)")
+plt.axis("off")
+plt.show()
+1.13.4
+
+12.4 Renda, escolaridade e plano de saude vs doenca cronica
+
+[139]: if 'quartil_renda' in df_ana.columns:
+t_renda = df_ana.groupby('quartil_renda', observed=False)['doenca_cronica'].
+↪mean() * 100
+print('Doenca cronica por quartil de renda (%):')
+print(t_renda.round(2))
+
+if 'escolaridade_ord' in df_ana.columns:
+t_esc = df_ana.groupby('escolaridade_ord')['doenca_cronica'].mean() * 100
+print('\nDoenca cronica por escolaridade_ord (%):')
+print(t_esc.round(2))
+if 'plano_saude_label' in df_ana.columns:
+t_plano = df_ana.groupby('plano_saude_label')['doenca_cronica'].mean() * 100
+print('\nDoenca cronica por plano de saude (%):')
+print(t_plano.round(2))
+Doenca cronica por quartil de renda (%):
+quartil_renda
+Q1 (menor)
+34.28
+Q2
+41.59
+Q3
+48.98
+Q4 (maior)
+48.7
+Name: doenca_cronica, dtype: Float64
+Doenca cronica por escolaridade_ord (%):
+escolaridade_ord
+0.0
+59.34
+1.0
+50.72
+2.0
+34.95
+3.0
+40.94
+4.0
+44.96
+Name: doenca_cronica, dtype: Float64
+Doenca cronica por plano de saude (%):
+plano_saude_label
+55
+
+Nao tem plano
+41.83
+Tem plano
+48.66
+Name: doenca_cronica, dtype: Float64
+1.13.5
+
+12.5 Raca, renda e doenca cronica
+
+[140]: if 'raca_label' in df_ana.columns:
+t_raca = df_ana.groupby('raca_label')['doenca_cronica'].mean() * 100
+print('Doenca cronica por raca (%):')
+print(t_raca.sort_values(ascending=False).round(2))
+plt.figure(figsize=(8, 5))
+t_raca.sort_values(ascending=False).plot(kind='bar', color='indianred')
+plt.title('Doenca cronica (%) por raca')
+plt.ylabel('Prevalencia (%)')
+plt.xlabel('Raca')
+plt.xticks(rotation=30)
+plt.tight_layout()
+plt.show()
+if 'raca_label' in df_ana.columns and 'quartil_renda' in df_ana.columns:
+t_raca_renda = (df_ana.groupby(['raca_label', 'quartil_renda'],␣
+↪observed=False)['doenca_cronica'].mean() * 100).unstack()
+print('\nDoenca cronica por raca e quartil de renda (%):')
+print(t_raca_renda.round(2))
+Doenca cronica por raca (%):
+raca_label
+Branca_base
+46.81
+Amarela
+45.0
+Preta
+44.38
+Parda
+40.7
+Indigena
+40.48
+Ignorado
+22.22
+Name: doenca_cronica, dtype: Float64
+
+56
+
+Doenca cronica por raca e quartil de renda (%):
+quartil_renda Q1 (menor)
+Q2
+Q3 Q4 (maior)
+raca_label
+Amarela
+35.51 38.13 44.97
+52.45
+Branca_base
+36.39 43.91 50.66
+49.59
+Ignorado
+100.0
+<NA> 33.33
+0.0
+Indigena
+33.78 39.41
+48.2
+46.94
+Parda
+32.87 40.23 47.24
+47.17
+Preta
+37.72 42.67 50.72
+48.54
+1.13.6
+
+12.6 Qualidade de vida vs renda, escolaridade e moradia
+
+Definicao usada: - imc_bom: IMC entre 18.5 e 24.9 - atividade_boa: nivel moderado/alto tabagismo_bom: nao fumar atualmente - alcool_bom: nao estar no consumo mais alto
+Score final: qv_score (0 a 4) e qv_boa (score >= 3).
+[141]: # componentes de qualidade de vida
+if 'imc' in df_ana.columns:
+df_ana['imc_bom'] = df_ana['imc'].between(18.5, 24.9, inclusive='both')
+else:
+df_ana['imc_bom'] = False
+if 'atividade_status' in df_ana.columns:
+df_ana['atividade_boa'] = df_ana['atividade_status'] >= 2
+
+57
+
+elif 'atividade_2' in df_ana.columns and 'atividade_3' in df_ana.columns:
+df_ana['atividade_boa'] = df_ana['atividade_2'] | df_ana['atividade_3']
+else:
+df_ana['atividade_boa'] = False
+if 'tabagismo_status' in df_ana.columns:
+df_ana['tabagismo_bom'] = df_ana['tabagismo_status'] < 2
+elif 'tabagismo_2' in df_ana.columns:
+df_ana['tabagismo_bom'] = ~df_ana['tabagismo_2']
+else:
+df_ana['tabagismo_bom'] = False
+if 'alcool_status' in df_ana.columns:
+df_ana['alcool_bom'] = df_ana['alcool_status'] <= 2
+elif 'alcool_3' in df_ana.columns:
+df_ana['alcool_bom'] = ~df_ana['alcool_3']
+else:
+df_ana['alcool_bom'] = False
+componentes_qv = ['imc_bom', 'atividade_boa', 'tabagismo_bom', 'alcool_bom']
+df_ana['qv_score'] = df_ana[componentes_qv].astype(int).sum(axis=1)
+df_ana['qv_boa'] = df_ana['qv_score'] >= 3
+print('Distribuicao do score de qualidade de vida:')
+print(df_ana['qv_score'].value_counts().sort_index())
+if 'quartil_renda' in df_ana.columns:
+qv_renda = df_ana.groupby('quartil_renda', observed=False)['qv_boa'].mean()␣
+↪* 100
+print('\nBoa qualidade de vida por quartil de renda (%):')
+print(qv_renda.round(2))
+if 'escolaridade_ord' in df_ana.columns:
+qv_esc = df_ana.groupby('escolaridade_ord')['qv_boa'].mean() * 100
+print('\nBoa qualidade de vida por escolaridade_ord (%):')
+print(qv_esc.round(2))
+if 'domicilio_tipo' in df_ana.columns:
+qv_dom = df_ana.groupby('domicilio_tipo')['qv_boa'].mean() * 100
+print('\nBoa qualidade de vida por tipo de domicilio (%):')
+print(qv_dom.sort_values(ascending=False).round(2))
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+if 'quartil_renda' in df_ana.columns:
+(df_ana.groupby('quartil_renda', observed=False)['qv_boa'].mean() * 100).
+↪plot(kind='bar', ax=axes[0], color='slateblue')
+
+58
+
+axes[0].set_title('Boa QV vs renda')
+axes[0].set_ylabel('Boa QV (%)')
+axes[0].tick_params(axis='x', rotation=20)
+if 'escolaridade_ord' in df_ana.columns:
+(df_ana.groupby('escolaridade_ord')['qv_boa'].mean() * 100).
+↪plot(kind='bar', ax=axes[1], color='seagreen')
+axes[1].set_title('Boa QV vs escolaridade')
+axes[1].set_ylabel('Boa QV (%)')
+axes[1].tick_params(axis='x', rotation=20)
+if 'domicilio_tipo' in df_ana.columns:
+(df_ana.groupby('domicilio_tipo')['qv_boa'].mean() * 100).
+↪sort_values(ascending=False).plot(kind='bar', ax=axes[2], color='peru')
+axes[2].set_title('Boa QV vs moradia')
+axes[2].set_ylabel('Boa QV (%)')
+axes[2].tick_params(axis='x', rotation=45)
+plt.tight_layout()
+plt.show()
+Distribuicao do score de qualidade de vida:
+qv_score
+613
+0
+1
+6779
+2
+39975
+3
+32995
+4
+7295
+Name: count, dtype: int64
+Boa qualidade de vida por quartil de renda (%):
+quartil_renda
+Q1 (menor)
+43.39
+Q2
+44.25
+Q3
+44.98
+Q4 (maior)
+51.23
+Name: qv_boa, dtype: float64
+Boa qualidade de vida por escolaridade_ord (%):
+escolaridade_ord
+0.0
+37.44
+1.0
+38.38
+2.0
+48.22
+3.0
+55.64
+4.0
+61.00
+Name: qv_boa, dtype: float64
+
+59
+
+Boa qualidade de vida por tipo de domicilio (%):
+domicilio_tipo
+Apartamento
+55.08
+44.71
+Casa_base
+Cortico
+43.04
+Name: qv_boa, dtype: float64
+
+60
+
+

@@ -1,38 +1,31 @@
 # PNS DSS NCD ML
 
-Projeto de pesquisa aplicado para analisar Determinantes Sociais da Saude (DSS) e Doencas Cronicas Nao Transmissiveis (DCNT) com base nos microdados da Pesquisa Nacional de Saude (PNS 2019), utilizando pipeline de preprocessamento e modelagem em Python.
+Projeto de pesquisa para analise de Determinantes Sociais da Saude (DSS) e Doencas Cronicas Nao Transmissiveis (DCNT) com microdados da Pesquisa Nacional de Saude (PNS 2019).
 
 ## Objetivo
 
-Construir uma base analitica consistente a partir dos microdados da PNS 2019 e avaliar relacoes entre fatores sociodemograficos, socioeconomicos, territoriais e comportamentais com desfechos de doencas cronicas.
+Construir uma base analitica consistente a partir dos microdados da PNS 2019 e avaliar associacoes entre fatores sociodemograficos, socioeconomicos, territoriais e comportamentais e desfechos cronicos.
 
-## Escopo do projeto
-
-- Leitura e organizacao dos microdados oficiais da PNS.
-- Selecao e tratamento de variaveis com base teorica.
-- Preprocessamento, feature engineering e transformacoes estatisticas.
-- Analise exploratoria e preparacao para modelagem preditiva.
-
-## Estrutura principal
+## Estrutura do repositorio
 
 - `data/`: dados brutos e processados.
-- `notebooks/`: analise exploratoria e experimentos.
-- `src/`: modulos de processamento, transformacao, modelagem e avaliacao.
-- `ibge-official-files/`: arquivos oficiais de suporte (layout, scripts e malha territorial).
-- `docs.md`: documentacao metodologica, decisoes tecnicas e justificativas teoricas.
+- `notebooks/`: exploracao e experimentos de modelagem.
+- `src/`: codigo do pipeline de pre-processamento e modulos de apoio.
+- `ibge-official-files/`: arquivos oficiais de referencia do IBGE/PNS.
 
-## Ambiente de desenvolvimento
+## Ambiente
 
-- Python com ambiente virtual `tcc_venv`.
-- Jupyter Notebook para analise exploratoria.
-- Bibliotecas principais: `pandas`, `numpy`, `matplotlib`, `seaborn`, `geopandas`, `scikit-learn`.
+- Python 3.12.10
+- JupyterLab
+- Bibliotecas principais no arquivo `requirements.txt`
 
-## Como executar
+## Documentacao enxuta
 
-1. Ative o ambiente virtual.
-2. Execute o notebook `notebooks/analise_exploratoria.ipynb`.
-3. Ou rode o pipeline pelos modulos em `src/`.
+- Dicionario de variaveis: `DICIONARIO_VARIAVEIS.md`
+- Guia de execucao da pipeline: `GUIA_PIPELINE_PRE_PROCESSAMENTO.md`
 
-## Documentacao
+## Execucao rapida
 
-As escolhas metodologicas, criterios de selecao de variaveis e justificativas epidemiologicas estao centralizadas em `docs.md`.
+1. Ative o ambiente virtual (`tcc_venv`).
+2. Instale dependencias: `pip install -r requirements.txt`.
+3. Siga o guia em `GUIA_PIPELINE_PRE_PROCESSAMENTO.md`.

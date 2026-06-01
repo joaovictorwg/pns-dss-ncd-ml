@@ -187,14 +187,14 @@
 
 ### `esc_scaled`
 - **Tipo:** `float64`
-- **Descrição:** Escolaridade padronizada (StandardScaler)
+- **Descrição:** Escolaridade padronizada por escore z
 - **Cálculo:** (escolaridade_ord - μ) / σ
 - **Uso:** Componente do índice socioeconômico
 - **Origem:** Derivada de escolaridade_ord
 
 ### `renda_scaled`
 - **Tipo:** `float64`
-- **Descrição:** Renda per capita (log) padronizada (StandardScaler)
+- **Descrição:** Renda per capita (log) padronizada por escore z
 - **Cálculo:** (renda_per_capita_log - μ) / σ
 - **Uso:** Componente do índice socioeconômico
 - **Origem:** Derivada de renda_per_capita_log
@@ -480,7 +480,7 @@ Dataset Final (79 variáveis × 74.304 obs)
   - **Tipo de Domicílio:** Casa
 
 ### Padronização
-- **StandardScaler:** Aplicado em esc_scaled, renda_scaled
+- **Padronização tipo z-score (manual):** Aplicada em esc_scaled, renda_scaled
 - **Centralização:** Aplicada em idade_c (média = 0)
 - **Log-transformação:** Aplicada em rendas (log1p para preservar zeros)
 

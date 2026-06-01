@@ -1,0 +1,413 @@
+
+1
+
+Automatic Zoom
+analise_exploratoria
+April 22, 2026
+1 Análise Exploratória - PNS 2019
+Análise exploratória dos dados da Pesquisa Nacional de Saúde (PNS) 2019.
+Objetivo: explorar relações entre determinantes sociais e doenças crônicas.
+[94]: import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+import sys
+import geopandas as gpd
+from pathlib import Path
+# configuracoes
+warnings.filterwarnings('ignore')
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', 100)
+sns.set_palette('Set2')
+plt.style.use('seaborn-v0_8-whitegrid')
+malha_territorial = gpd.read_file("../ibge-official-files/BR_UF_2024.shp")
+# importar modulos locais
+sys.path.insert(0, str(Path.cwd().parent / 'src'))
+from selection import select_features
+from preprocessing import clean_pns_data
+from feature_engineering import apply_feature_engineering
+from transformation import apply_transformations
+[95]: print("=" * 70)
+print("RASTREAMENTO DE IDADE THROUGH PIPELINE")
+print("=" * 70)
+# Etapa 1: Selection
+df_sel = select_features()
+n_sel_idade = df_sel['idade'].notna().sum()
+1
+print(f"\n1. SELECTION: idade non-null = {n_sel_idade:,}")
+# Etapa 2: Preprocessing
+df_pre = clean_pns_data(df_sel)
+n_pre_idade = df_pre['idade'].notna().sum()
+print(f"2. PREPROCESSING: idade non-null = {n_pre_idade:,} (removidas:␣
+↪{n_sel_idade - n_pre_idade:,})")
+# Etapa 3: Feature Engineering
+df_eng = apply_feature_engineering(df_pre)
+n_eng_idade = df_eng['idade'].notna().sum() if 'idade' in df_eng.columns else␣
+↪"COLUNA NAO EXISTE"
+print(f"3. FEATURE ENGINEERING: idade non-null = {n_eng_idade} (removidas:␣
+↪{n_pre_idade - n_eng_idade if n_eng_idade != 'COLUNA NAO EXISTE' else␣
+↪'NA'})")
+# Etapa 4: Transformation
+df_tra = apply_transformations(df_eng)
+n_tra_idade_c = df_tra['idade_c'].notna().sum() if 'idade_c' in df_tra.columns␣
+↪else "COLUNA NAO EXISTE"
+n_tra_idade_c2 = df_tra['idade_c2'].notna().sum() if 'idade_c2' in df_tra.
+↪columns else "COLUNA NAO EXISTE"
+print(f"4. TRANSFORMATION: idade_c non-null = {n_tra_idade_c}")
+print(f" idade_c2 non-null = {n_tra_idade_c2}")
+print(f" registros totais = {len(df_tra):,}")
+print("\n" + "=" * 70)
+======================================================================
+RASTREAMENTO DE IDADE THROUGH PIPELINE
+======================================================================
+Features selecionadas salvas em:
+d:\Workspace\TCCII\data\processed\pns_2019_selected.csv
+Shape: (293726, 37)
+1. SELECTION: idade non-null = 279,382
+Após filtro de público-alvo (com resposta): 89954 registros
+Limpeza completa: 87657 registros, 39 features
+2. PREPROCESSING: idade non-null = 87,657 (removidas: 191,725)
+Iniciando engenharia de features: 87657 registros
+Engenharia completa: 87657 registros, 77 features
+3. FEATURE ENGINEERING: idade non-null = 87657 (removidas: 0)
+Aplicando transformações estatísticas: 87657 registros
+Transformações completas: 87657 registros, 78 features
+4. TRANSFORMATION: idade_c non-null = 87657
+idade_c2 non-null = 87657
+registros totais = 87,657
+2
+======================================================================
+[96]: # DIAGNOSTICO: por que faixa_etaria tem tantos NaN?
+print("=" * 70)
+print("DIAGNOSTICO: FAIXA_ETARIA NaN")
+print("=" * 70)
+# Verificar idade_c2
+print(f"\n1. IDADE_C2:")
+print(f" Non-null: {df_tra['idade_c2'].notna().sum():,}")
+print(f" NaN: {df_tra['idade_c2'].isna().sum():,}")
+print(f" Min: {df_tra['idade_c2'].min():.2f}")
+print(f" Max: {df_tra['idade_c2'].max():.2f}")
+print(f" Mean: {df_tra['idade_c2'].mean():.2f}")
+print(f" Std: {df_tra['idade_c2'].std():.2f}")
+# Bins usados no pd.cut
+bins = [18, 30, 40, 50, 60, 120]
+print(f"\n2. BINS ESPECIFICADOS: {bins}")
+# Contar valores fora dos bins
+fora_bins = (df_tra['idade_c2'] < bins[0]) | (df_tra['idade_c2'] > bins[-1])
+print(f" Valores FORA dos bins (< 18 ou > 120): {fora_bins.sum():,}")
+if (df_tra['idade_c2'] < bins[0]).sum() > 0:
+print(f" - Menores que 18: {(df_tra['idade_c2'] < bins[0]).sum():,}")
+print(f" Min valor < 18: {df_tra[df_tra['idade_c2'] < 18]['idade_c2'].
+↪min():.2f}")
+if (df_tra['idade_c2'] > bins[-1]).sum() > 0:
+print(f" - Maiores que 120: {(df_tra['idade_c2'] > bins[-1]).sum():,}")
+print(f" Max valor > 120: {df_tra[df_tra['idade_c2'] > 120]['idade_c2'].
+↪max():.2f}")
+# Criar faixa_etaria e verificar
+df_tra['faixa_etaria_diag'] = pd.cut(df_tra['idade_c2'],
+bins=bins,
+labels=['18-29', '30-39', '40-49',␣
+↪'50-59', '60+'])
+n_nan_faixa = df_tra['faixa_etaria_diag'].isna().sum()
+n_valid_faixa = df_tra['faixa_etaria_diag'].notna().sum()
+print(f"\n3. RESULTADO pd.cut():")
+print(f" Non-null faixa_etaria: {n_valid_faixa:,}")
+print(f" NaN faixa_etaria: {n_nan_faixa:,}")
+3
+print(f" % NaN: {(n_nan_faixa / len(df_tra) * 100):.1f}%")
+if n_nan_faixa == fora_bins.sum():
+print(f"\n CONCLUSAO: Todos os NaN em faixa_etaria sao por valores FORA␣
+↪dos bins!")
+print(f" SOLUCAO: Usar right=False ou expandir bins para incluir idade_c2␣
+↪centrada")
+else:
+print(f"\n Há {n_nan_faixa - fora_bins.sum():,} NaN adicionais (além dos␣
+↪fora dos bins)")
+# Distribuicao de faixa_etaria
+print(f"\n4. DISTRIBUICAO DE FAIXA_ETARIA:")
+print(df_tra['faixa_etaria_diag'].value_counts(dropna=False).sort_index())
+print("\n" + "=" * 70)
+======================================================================
+DIAGNOSTICO: FAIXA_ETARIA NaN
+======================================================================
+1. IDADE_C2:
+Non-null: 87,657
+NaN: 0
+Min: 0.13
+Max: 3556.49
+Mean: 292.24
+Std: 332.49
+2. BINS ESPECIFICADOS: [18, 30, 40, 50, 60, 120]
+Valores FORA dos bins (< 18 ou > 120): 63,969
+- Menores que 18: 12,667
+Min valor < 18: 0.13
+- Maiores que 120: 51,302
+Max valor > 120: 3556.49
+3. RESULTADO pd.cut():
+Non-null faixa_etaria: 23,688
+NaN faixa_etaria: 63,969
+% NaN: 73.0%
+CONCLUSAO: Todos os NaN em faixa_etaria sao por valores FORA dos bins!
+SOLUCAO: Usar right=False ou expandir bins para incluir idade_c2 centrada
+4. DISTRIBUICAO DE FAIXA_ETARIA:
+faixa_etaria_diag
+18-29 5075
+4
+30-39 1589
+40-49 3308
+50-59 3481
+60+ 10235
+NaN 63969
+Name: count, dtype: int64
+======================================================================
+[97]: # reiniciar o kernel para recarregar os modulos atualizados
+import importlib
+import sys
+# remover modulos em cache
+mods_to_remove = [m for m in sys.modules if 'src.' in m or m in ['selection',␣
+↪'preprocessing', 'feature_engineering', 'transformation']]
+for m in mods_to_remove:
+del sys.modules[m]
+print(f"Removidos {len(mods_to_remove)} modulos em cache")
+print("Recarregando modulos...")
+Removidos 4 modulos em cache
+Recarregando modulos...
+1.1 1. Carregar dados selecionados
+Carregar os dados já selecionados (features de interesse)
+[98]: # selecionar features do dataset bruto
+df_selected = select_features()
+print(f"Dados carregados: {df_selected.shape[0]:,} registros x {df_selected.
+↪shape[1]} variaveis")
+print(f"\nColunas: {list(df_selected.columns)}")
+Features selecionadas salvas em:
+d:\Workspace\TCCII\data\processed\pns_2019_selected.csv
+Shape: (293726, 37)
+Dados carregados: 293,726 registros x 37 variaveis
+Colunas: ['uf', 'situacao_domicilio', 'tipo_domicilio', 'agua_canalizada',
+'acesso_internet', 'sexo', 'idade', 'raca', 'alfabetizado', 'escolaridade',
+'plano_saude', 'renda_domiciliar', 'renda_per_capita', 'peso', 'altura',
+'fumante_atual', 'fumou_passado', 'alcool_frequencia', 'alcool_dia_semana',
+'atividade_fisica', 'atividade_fisica_frequencia', 'hipertensao', 'diabetes',
+'doenca_coracao', 'infarto', 'angina', 'insuficiencia_cardiaca', 'arritmia',
+'avc', 'asma', 'artrite', 'dort', 'depressao', 'doenca_pulmao', 'enfisema',
+'bronquite', 'insuficiencia_renal']
+5
+Dados carregados: 293,726 registros x 37 variaveis
+Colunas: ['uf', 'situacao_domicilio', 'tipo_domicilio', 'agua_canalizada',
+'acesso_internet', 'sexo', 'idade', 'raca', 'alfabetizado', 'escolaridade',
+'plano_saude', 'renda_domiciliar', 'renda_per_capita', 'peso', 'altura',
+'fumante_atual', 'fumou_passado', 'alcool_frequencia', 'alcool_dia_semana',
+'atividade_fisica', 'atividade_fisica_frequencia', 'hipertensao', 'diabetes',
+'doenca_coracao', 'infarto', 'angina', 'insuficiencia_cardiaca', 'arritmia',
+'avc', 'asma', 'artrite', 'dort', 'depressao', 'doenca_pulmao', 'enfisema',
+'bronquite', 'insuficiencia_renal']
+1.2 2. Visão geral dos dados selecionados
+Visão geral antes de qualquer processamento
+[99]: # info basica
+df_selected.info()
+<class 'pandas.DataFrame'>
+RangeIndex: 293726 entries, 0 to 293725
+Data columns (total 37 columns):
+# Column Non-Null Count Dtype
+--- ------ -------------- -----
+0 uf 293726 non-null int64
+1 situacao_domicilio 293726 non-null int64
+2 tipo_domicilio 279382 non-null float64
+3 agua_canalizada 279382 non-null float64
+4 acesso_internet 279382 non-null float64
+5 sexo 279382 non-null float64
+6 idade 279382 non-null float64
+7 raca 279382 non-null float64
+8 alfabetizado 261595 non-null float64
+9 escolaridade 178013 non-null float64
+10 plano_saude 279382 non-null float64
+11 renda_domiciliar 279210 non-null float64
+12 renda_per_capita 279210 non-null float64
+13 peso 89954 non-null float64
+14 altura 89954 non-null float64
+15 fumante_atual 90846 non-null float64
+16 fumou_passado 79460 non-null float64
+17 alcool_frequencia 90846 non-null float64
+18 alcool_dia_semana 24323 non-null float64
+19 atividade_fisica 90846 non-null float64
+20 atividade_fisica_frequencia 36398 non-null float64
+21 hipertensao 88736 non-null float64
+22 diabetes 84073 non-null float64
+23 doenca_coracao 90846 non-null float64
+24 infarto 4732 non-null float64
+6
+25 angina 4732 non-null float64
+26 insuficiencia_cardiaca 4732 non-null float64
+27 arritmia 4732 non-null float64
+28 avc 90846 non-null float64
+29 asma 90846 non-null float64
+30 artrite 90846 non-null float64
+31 dort 90846 non-null float64
+32 depressao 90846 non-null float64
+33 doenca_pulmao 90846 non-null float64
+34 enfisema 1279 non-null float64
+35 bronquite 1279 non-null float64
+36 insuficiencia_renal 90846 non-null float64
+dtypes: float64(35), int64(2)
+memory usage: 82.9 MB
+[100]: # primeiras linhas
+df_selected.head(10)
+[100]: uf situacao_domicilio tipo_domicilio agua_canalizada acesso_internet \
+0 11 1 1.0 1.0 1.0
+1 11 1 1.0 1.0 1.0
+2 11 1 1.0 1.0 1.0
+3 11 1 1.0 1.0 1.0
+4 11 1 1.0 1.0 1.0
+5 11 1 1.0 1.0 1.0
+6 11 1 1.0 1.0 1.0
+7 11 1 1.0 1.0 1.0
+8 11 1 1.0 1.0 1.0
+9 11 1 1.0 1.0 1.0
+sexo idade raca alfabetizado escolaridade plano_saude \
+0 2.0 55.0 1.0 1.0 5.0 2.0
+1 1.0 69.0 4.0 1.0 NaN 2.0
+2 1.0 31.0 2.0 1.0 10.0 2.0
+3 1.0 9.0 2.0 1.0 NaN 2.0
+4 2.0 6.0 4.0 1.0 NaN 2.0
+5 2.0 4.0 2.0 NaN NaN 2.0
+6 2.0 33.0 1.0 1.0 7.0 2.0
+7 1.0 17.0 1.0 1.0 NaN 2.0
+8 2.0 15.0 4.0 1.0 NaN 2.0
+9 2.0 19.0 4.0 1.0 10.0 2.0
+renda_domiciliar renda_per_capita peso altura fumante_atual \
+0 2098.0 350.0 60.0 145.0 3.0
+1 2098.0 350.0 NaN NaN NaN
+2 2098.0 350.0 NaN NaN NaN
+3 2098.0 350.0 NaN NaN NaN
+7
+4 2098.0 350.0 NaN NaN NaN
+5 2098.0 350.0 NaN NaN NaN
+6 1000.0 250.0 NaN NaN NaN
+7 1000.0 250.0 NaN NaN NaN
+8 1000.0 250.0 NaN NaN NaN
+9 1000.0 250.0 65.0 152.0 1.0
+fumou_passado alcool_frequencia alcool_dia_semana atividade_fisica \
+0 1.0 2.0 NaN 1.0
+1 NaN NaN NaN NaN
+2 NaN NaN NaN NaN
+3 NaN NaN NaN NaN
+4 NaN NaN NaN NaN
+5 NaN NaN NaN NaN
+6 NaN NaN NaN NaN
+7 NaN NaN NaN NaN
+8 NaN NaN NaN NaN
+9 NaN 2.0 NaN 2.0
+atividade_fisica_frequencia hipertensao diabetes doenca_coracao \
+0 1.0 1.0 2.0 2.0
+1 NaN NaN NaN NaN
+2 NaN NaN NaN NaN
+3 NaN NaN NaN NaN
+4 NaN NaN NaN NaN
+5 NaN NaN NaN NaN
+6 NaN NaN NaN NaN
+7 NaN NaN NaN NaN
+8 NaN NaN NaN NaN
+9 NaN 2.0 2.0 2.0
+infarto angina insuficiencia_cardiaca arritmia avc asma artrite \
+0 NaN NaN NaN NaN 2.0 2.0 1.0
+1 NaN NaN NaN NaN NaN NaN NaN
+2 NaN NaN NaN NaN NaN NaN NaN
+3 NaN NaN NaN NaN NaN NaN NaN
+4 NaN NaN NaN NaN NaN NaN NaN
+5 NaN NaN NaN NaN NaN NaN NaN
+6 NaN NaN NaN NaN NaN NaN NaN
+7 NaN NaN NaN NaN NaN NaN NaN
+8 NaN NaN NaN NaN NaN NaN NaN
+9 NaN NaN NaN NaN 2.0 2.0 2.0
+dort depressao doenca_pulmao enfisema bronquite insuficiencia_renal
+0 2.0 1.0 2.0 NaN NaN 2.0
+1 NaN NaN NaN NaN NaN NaN
+2 NaN NaN NaN NaN NaN NaN
+8
+3 NaN NaN NaN NaN NaN NaN
+4 NaN NaN NaN NaN NaN NaN
+5 NaN NaN NaN NaN NaN NaN
+6 NaN NaN NaN NaN NaN NaN
+7 NaN NaN NaN NaN NaN NaN
+8 NaN NaN NaN NaN NaN NaN
+9 2.0 2.0 2.0 NaN NaN 2.0
+[101]: # estatisticas descritivas
+df_selected.describe()
+[101]: uf situacao_domicilio tipo_domicilio agua_canalizada \
+count 293726.000000 293726.000000 279382.000000 279382.000000
+mean 28.844716 1.236843 1.103457 1.113282
+std 11.762108 0.425146 0.312296 0.438858
+min 11.000000 1.000000 1.000000 1.000000
+25% 21.000000 1.000000 1.000000 1.000000
+50% 27.000000 1.000000 1.000000 1.000000
+75% 35.000000 1.000000 1.000000 1.000000
+max 53.000000 2.000000 3.000000 3.000000
+acesso_internet sexo idade raca \
+count 279382.000000 279382.000000 279382.000000 279382.000000
+mean 1.199780 1.518788 35.267651 2.735856
+std 0.399836 0.499648 21.675970 1.418659
+min 1.000000 1.000000 0.000000 1.000000
+25% 1.000000 1.000000 17.000000 1.000000
+50% 1.000000 2.000000 34.000000 4.000000
+75% 1.000000 2.000000 52.000000 4.000000
+max 2.000000 2.000000 112.000000 9.000000
+alfabetizado escolaridade plano_saude renda_domiciliar \
+count 261595.000000 178013.000000 279382.000000 279210.000000
+mean 1.105457 8.766028 1.790262 4095.075101
+std 0.307142 2.556453 0.407122 6685.171169
+min 1.000000 1.000000 1.000000 0.000000
+25% 1.000000 7.000000 2.000000 1371.000000
+50% 1.000000 10.000000 2.000000 2498.000000
+75% 1.000000 10.000000 2.000000 4500.000000
+max 2.000000 15.000000 2.000000 644998.000000
+renda_per_capita peso altura fumante_atual \
+count 279210.000000 89954.000000 89954.000000 90846.000000
+mean 1314.001046 71.876637 164.905841 2.762389
+std 2307.681908 15.160030 9.707327 0.636955
+min 0.000000 25.000000 128.000000 1.000000
+25% 399.000000 61.000000 158.000000 3.000000
+9
+50% 760.000000 70.000000 165.000000 3.000000
+75% 1397.000000 80.000000 171.000000 3.000000
+max 203196.000000 176.000000 206.000000 3.000000
+fumou_passado alcool_frequencia alcool_dia_semana atividade_fisica \
+count 79460.000000 90846.000000 24323.000000 90846.000000
+mean 2.427888 1.657585 1.861736 1.599344
+std 0.882790 0.872154 1.691750 0.490034
+min 1.000000 1.000000 0.000000 1.000000
+25% 1.000000 1.000000 1.000000 1.000000
+50% 3.000000 1.000000 1.000000 2.000000
+75% 3.000000 3.000000 2.000000 2.000000
+max 3.000000 3.000000 7.000000 2.000000
+atividade_fisica_frequencia hipertensao diabetes \
+count 36398.000000 88736.000000 84073.000000
+mean 3.365377 1.731214 1.912291
+std 1.931954 0.443331 0.282874
+min 0.000000 1.000000 1.000000
+25% 2.000000 1.000000 2.000000
+50% 3.000000 2.000000 2.000000
+75% 5.000000 2.000000 2.000000
+max 7.000000 2.000000 2.000000
+doenca_coracao infarto angina insuficiencia_cardiaca \
+count 90846.000000 4732.000000 4732.000000 4732.000000
+mean 1.947912 1.707735 1.856932 1.782544
+std 0.222206 0.454852 0.350180 0.412559
+min 1.000000 1.000000 1.000000 1.000000
+25% 2.000000 1.000000 2.000000 2.000000
+50% 2.000000 2.000000 2.000000 2.000000
+75% 2.000000 2.000000 2.000000 2.000000
+max 2.000000 2.000000 2.000000 2.000000
+arritmia avc asma artrite dort \
+count 4732.000000 90846.000000 90846.000000 90846.000000 90846.000000
+mean 1.560862 1.978260 1.950829 1.920591 1.981166
+std 0.496334 0.145834 0.216226 0.270378 0.135940
+min 1.000000 1.000000 1.000000 1.000000 1.000000
+25% 1.000000 2.000000 2.000000 2.000000 2.000000
+50% 2.000000 2.000000 2.000000 2.000000 2.000000
+75% 2.000000 2.000000 2.000000 2.000000 2.000000
+max 2.000000 2.000000 2.000000 2.000000 2.000000
+depressao doenca_pulmao enfisema bronquite \
+count 90846.000000 90846.000000 1279.000000 1279.000000
+mean 1.908284 1.985921 1.711493 1.512119
+10
